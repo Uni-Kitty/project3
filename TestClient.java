@@ -9,7 +9,7 @@ public class TestClient {
 
     private static final int serverPort = 9999;
     private static final int clientPort = 9998;
-    private static final String URL = "localhost";
+    private static final String URL = "54.69.151.4";
     
     public static void main(String arg[]) throws Exception {
         DatagramSocket socket = new DatagramSocket(9998);
