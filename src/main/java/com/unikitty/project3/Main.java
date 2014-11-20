@@ -1,107 +1,112 @@
 package com.unikitty.project3;
 
-import java.io.*;
-import java.net.*;
-import java.nio.*;
-import java.util.*;
+import java.io.IOException;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.net.InetAddress;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
 
-import org.codehaus.jackson.JsonGenerationException;
-import org.codehaus.jackson.JsonParseException;
-import org.codehaus.jackson.map.JsonMappingException;
 import org.codehaus.jackson.map.ObjectMapper;
 
-import com.unikitty.jackson.Game;
-import com.unikitty.jackson.Model;
-
 /**
- * Here is your main, I wrote JacksonExample so you guys can see how to use it.
- * Eventually main will of course start our servers and do other magical things.
+ * How to use Jackson:
+ * 
+ * Object to JSON : mapper.writeValueAsString(m);
+ * 
+ * JSON to Object : (Attack) mapper.readValue(inputString, Attack.class);
  */
 public class Main {
+    
 	private static Map<InetAddress, Player> playersInGame = new HashMap<InetAddress, Player>();
 	private static Game gameRepresentation = new Game();
-	private static int defaultPort;
+	private static int serverPort = 9999;
+	private static int clientPort = 9998;
+	private static ObjectMapper mapper = new ObjectMapper(); // mapper for obj<-->JSON
+	private static AtomicInteger id = new AtomicInteger(); // avoid race conditions, use atomic int for ids
+	private static DatagramSocket serverSocket;
+	private static DatagramSocket clientSocket;
 	
     public static void main( String[] args ) {
-    	if (args.length > 0) {
-            try {
-                defaultPort = Integer.parseInt(args[0]);
-            }
-            catch (NumberFormatException e) {
-                System.exit(0);
-            }
-        }
-    	try {
-             System.out.println("Starting Server on port " + defaultPort);
-             DatagramSocket serverSocket = new DatagramSocket(defaultPort);
-             byte[] receivedData = new byte[1024];
-             byte[] dataToSend  = new byte[1024];
-             int playerIDCount = 0;
-             int attackIDCount = 0;
-             while (true) {
-                 DatagramPacket receivedPacket = new DatagramPacket(receivedData, receivedData.length);
-                 serverSocket.receive(receivedPacket);   // receive a packet
-                 InetAddress IPAddress = receivedPacket.getAddress();
-                 if (playersInGame.keySet().contains(IPAddress)) {
-                	 // this player is in game!
-                	 // it is an attack or a position update
-                	 String update = new String(receivedPacket.getData());   
-                     System.out.println("RECEIVED: " + update);
-                 } else {
-                	 // new player
-                	 int port = receivedPacket.getPort();
-                	 Player newPlayer = new Player(IPAddress, port, playerIDCount);
-                	 playersInGame.put(IPAddress, newPlayer);
-                	 playerIDCount++;
-                	 gameRepresentation.addPlayer(newPlayer.getGameState());
-                 }
-             }
-        }
-        catch (Exception e) {
-            e.printStackTrace();
-        }
-        //jacksonExample();
-    }
-    
-    /**
-     * runs Jackson example
-     */
-    private static void jacksonExample() {
         try {
-            Model m = new Model(1, 2);
-            String JSONString = ObjectToJackson(m);
-            System.out.println("\nAttempting to map POJO to JSON String:");
-            System.out.println(JSONString + "\n");
-            Model n = JSONToModel(JSONString);
-            System.out.println("Attempting to map JSON String to POJO");
-            if (m.equals(n))
-                System.out.println("Successfully deserialized JSON\n");
+            serverSocket = new DatagramSocket(serverPort);
+            clientSocket = new DatagramSocket();
+            System.out.println("Server started on port " + serverPort);
+            ExecutorService threadPool = Executors.newCachedThreadPool(); // thread pool to avoid creating too many threads
+            while (true) {
+                try { // need another try inside this loop so the server doesn't die on an error
+                    byte[] receivedData = new byte[1024];
+                    DatagramPacket receivedPacket = new DatagramPacket(receivedData, receivedData.length);
+                    serverSocket.receive(receivedPacket);
+                    threadPool.execute(new PacketHandler(receivedPacket));
+                }
+                catch (IOException e) {
+                    e.printStackTrace();
+                }
             }
+        }
+        catch (Exception e) {
+            System.out.println("Failed to start server, exiting");
+            System.exit(0);
+        }
+        finally {
+            serverSocket.close();
+            clientSocket.close();
+        }
+    }
+    
+    private static void sendHelloWorldUDP(InetAddress address) {
+        String hello = "Hello World";
+        byte[] data = hello.getBytes();
+        DatagramPacket packet = new DatagramPacket(data, data.length, address, clientPort);
+        try {
+            clientSocket.send(packet);
+        }
         catch (Exception e) {
             e.printStackTrace();
         }
     }
     
     /**
-     * Maps Model m to a JSON String with Jackson
-     * @throws IOException 
-     * @throws JsonMappingException 
-     * @throws JsonGenerationException 
+     * Worker class to handle each request as it comes in
      */
-    private static String ObjectToJackson(Model m) throws JsonGenerationException, JsonMappingException, IOException {
-        ObjectMapper obj = new ObjectMapper();
-        return obj.writeValueAsString(m);
+    private static class PacketHandler implements Runnable {
+        
+        private DatagramPacket receivedPacket;
+        
+        private PacketHandler(DatagramPacket receivedPacket) {
+            this.receivedPacket = receivedPacket;
+        }
+        
+        /**
+         * Main method to handle requests as they come in
+         */
+        public void run() {
+            InetAddress IPAddress = receivedPacket.getAddress();
+            if (playersInGame.keySet().contains(IPAddress)) {
+                // this player is in game!
+                // it is an attack or a position update
+                String update = new String(receivedPacket.getData());   
+                System.out.println("RECEIVED: " + update);
+            } else {
+                // new player
+                int port = 9998;
+                Player newPlayer = new Player(IPAddress, port, getNextId());
+                playersInGame.put(IPAddress, newPlayer);
+                gameRepresentation.addPlayer(newPlayer.getGameState());
+            }
+            
+            // this will go away, here for just getting things working
+            sendHelloWorldUDP(IPAddress);
+        }
+        
     }
     
-    /**
-     * Maps a JSON String to a Model
-     * @throws IOException 
-     * @throws JsonMappingException 
-     * @throws JsonParseException 
-     */
-    private static Model JSONToModel(String mString) throws JsonParseException, JsonMappingException, IOException {
-        ObjectMapper obj = new ObjectMapper();
-        return (Model) obj.readValue(mString, Model.class);
+    // Fetches the next unique id
+    private static int getNextId() {
+        return id.incrementAndGet();
     }
-    
 }

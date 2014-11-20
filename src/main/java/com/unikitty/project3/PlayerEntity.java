@@ -1,4 +1,4 @@
-package com.unikitty.jackson;
+package com.unikitty.project3;
 
 public class PlayerEntity extends GameEntity {
 	

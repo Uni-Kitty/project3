@@ -1,9 +1,7 @@
-package com.unikitty.jackson;
+package com.unikitty.project3;
 
 import java.util.HashSet;
 import java.util.Set;
-
-import com.unikitty.project3.Player;
 
 public class Game {
 	private Set<PlayerEntity> players = new HashSet<PlayerEntity>();

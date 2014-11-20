@@ -1,4 +1,4 @@
-package com.unikitty.jackson;
+package com.unikitty.project3;
 
 /**
  * This is a simple example of an object that can be mapped from a POJO (Plain old java object)

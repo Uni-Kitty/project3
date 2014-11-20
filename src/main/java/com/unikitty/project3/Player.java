@@ -2,8 +2,6 @@ package com.unikitty.project3;
 
 import java.net.InetAddress;
 
-import com.unikitty.jackson.PlayerEntity;
-
 public class Player {
 	private InetAddress IPAddress;
 	private int port;
