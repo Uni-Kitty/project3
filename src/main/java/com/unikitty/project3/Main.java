@@ -11,6 +11,15 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.codehaus.jackson.map.ObjectMapper;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.websocket.api.Session;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketError;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
+import org.eclipse.jetty.websocket.api.annotations.WebSocket;
+import org.eclipse.jetty.websocket.server.WebSocketHandler;
+import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
 
 /**
  * How to use Jackson:
@@ -31,10 +40,64 @@ public class Main {
 	private static DatagramSocket clientSocket;
 	
     public static void main( String[] args ) {
+        startWebSocketServer();
+    }
+    
+    private static void startWebSocketServer() {
+        try {
+            Server server = new Server(8080);
+            WebSocketHandler wsHandler = new WebSocketHandler() {
+                @Override
+                public void configure(WebSocketServletFactory factory) {
+                    factory.register(MyWebSocketHandler.class);
+                }
+            };
+            server.setHandler(wsHandler);
+            server.start();
+            server.join();
+            
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+        }
+        finally {
+            
+        }
+    }
+    
+    @WebSocket
+    public static class MyWebSocketHandler {
+
+        @OnWebSocketClose
+        public void onClose(int statusCode, String reason) {
+            System.out.println("Close: statusCode=" + statusCode + ", reason=" + reason);
+        }
+
+        @OnWebSocketError
+        public void onError(Throwable t) {
+            System.out.println("Error: " + t.getMessage());
+        }
+
+        @OnWebSocketConnect
+        public void onConnect(Session session) {
+            System.out.println("Connect: " + session.getRemoteAddress().getAddress());
+            try {
+                session.getRemote().sendString("Success, you connected to me!");
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
+        @OnWebSocketMessage
+        public void onMessage(String message) {
+            System.out.println("Message: " + message);
+        }
+    }
+    
+    private static void startUDPServer() {
         try {
             serverSocket = new DatagramSocket(serverPort);
-            clientSocket = new DatagramSocket();
-            System.out.println("Server started on port " + serverPort);
+            System.out.println("Server udp started on port " + serverPort);
             ExecutorService threadPool = Executors.newCachedThreadPool(); // thread pool to avoid creating too many threads
             while (true) {
                 try { // need another try inside this loop so the server doesn't die on an error
@@ -54,16 +117,15 @@ public class Main {
         }
         finally {
             serverSocket.close();
-            clientSocket.close();
         }
     }
     
     private static void sendHelloWorldUDP(InetAddress address) {
-        String hello = "Hello World";
+        String hello = "Hello udp world";
         byte[] data = hello.getBytes();
         DatagramPacket packet = new DatagramPacket(data, data.length, address, clientPort);
         try {
-            clientSocket.send(packet);
+            serverSocket.send(packet);
         }
         catch (Exception e) {
             e.printStackTrace();
@@ -93,8 +155,7 @@ public class Main {
                 System.out.println("RECEIVED: " + update);
             } else {
                 // new player
-                int port = 9998;
-                Player newPlayer = new Player(IPAddress, port, getNextId());
+                Player newPlayer = new Player(IPAddress, clientPort, getNextId());
                 playersInGame.put(IPAddress, newPlayer);
                 gameRepresentation.addPlayer(newPlayer.getGameState());
             }
