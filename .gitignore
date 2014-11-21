@@ -1,0 +1,10 @@
+# ignoring eclipse files and binary files
+.classpath
+
+.project
+
+.settings/*
+
+target/
+
+bin/
