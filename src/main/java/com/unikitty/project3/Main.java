@@ -26,7 +26,7 @@ public class Main {
     public static final int PORT = 9999;
     public static final int BROADCAST_DELAY = 15;
     
-	private static Game game = new Game();
+	private static Game game = new Game(); // the state of the game
 	private static HashMap<Session, Player> playersInGame = new HashMap<Session, Player>();
 	private static ObjectMapper mapper = new ObjectMapper(); // mapper for obj<-->JSON
 	private static AtomicInteger id = new AtomicInteger(); // avoid race conditions, use atomic int for ids
@@ -36,7 +36,7 @@ public class Main {
     }
     
     private static void startWebSocketServer() {
-        startMockGame();
+        startMockGame(); // this will go away eventually, just here to give the front end something to display
         startBroadcasting();
         try {
             Server server = new Server(PORT);
@@ -49,7 +49,6 @@ public class Main {
             server.setHandler(wsHandler);
             server.start();
             server.join();
-            
         }
         catch (Exception e) {
             e.printStackTrace();
@@ -93,14 +92,12 @@ public class Main {
         
     }
     
-    // Temporary thing, makes mock wizards run around in the game
+    // Temporary thing, makes mock wizards run around in the game giving the ui something to display
     private static class MockGameRunner implements Runnable {
         
         public void run() {
-            int i = 0;
+            int i = Integer.MIN_VALUE;
             while (true) {
-                if (i == 1000000)
-                    i = 0;
                 i++;
                 try {
                     int j = i % 400;
@@ -149,7 +146,7 @@ public class Main {
 
         @OnWebSocketMessage
         public void onMessage(String message) {
-            // TODO: handle incoming messages from clients
+            // TODO: handle incoming messages from clients, I guess this would be the clients sending attack info
             System.out.println("Message: " + message);
         }
     }

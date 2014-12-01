@@ -41,7 +41,7 @@ $(function() {
     // add the renderer view element to the DOM
     document.body.appendChild(renderer.view);
 
-    requestAnimFrame( animate );
+    requestAnimFrame( animate ); // I guess this starts a loop and keeps animating. Magic!
 
     var game = {};
     game.players = {}; // map id->player
@@ -69,7 +69,7 @@ $(function() {
         	    var texture = PIXI.Texture.fromImage("img/wizard-sm.png");
         		// create a new Sprite
         		game.players[id] = new PIXI.Sprite(texture);
-        		// center
+        		// center the sprite
         		game.players[id].anchor.x = 0.5;
         		game.players[id].anchor.y = 0.5;
         		// position
