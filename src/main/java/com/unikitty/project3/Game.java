@@ -4,7 +4,8 @@ import java.util.HashSet;
 import java.util.Set;
 
 public class Game {
-	private Set<PlayerEntity> players = new HashSet<PlayerEntity>();
+    
+	private Set<Player> players = new HashSet<Player>();
 	private Set<Attack> attacks = new HashSet<Attack>(); 
 	
 	public Game() {}
@@ -17,7 +18,7 @@ public class Game {
 		attacks.remove(a);
 	}
 	
-	public void addPlayer(PlayerEntity p) {
+	public void addPlayer(Player p) {
 		players.add(p);
 	}
 	
@@ -25,12 +26,11 @@ public class Game {
 		players.remove(p);
 	}
 	
-	
-	public Set<PlayerEntity> getPlayers() {
+	public Set<Player> getPlayers() {
 		return players;
 	}
 
-	public void setPlayers(Set<PlayerEntity> players) {
+	public void setPlayers(Set<Player> players) {
 		this.players = players;
 	}
 

@@ -1,6 +1,7 @@
 package com.unikitty.project3;
 
 public class GameEntity {
+    
 	protected int id;
 	protected int xPos;
 	protected int yPos;

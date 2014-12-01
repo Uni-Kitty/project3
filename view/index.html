@@ -1,0 +1,100 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+    <title>pixi.js example 1</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #000000;
+        }
+        
+        h1 {
+            font-family: "Courier New", monospace;
+            text-align: center;
+            color: white;
+        }
+    </style>
+    <script src="pixi.js"></script>
+    <script src="jquery.js"></script>
+
+</head>
+<body>
+
+    <h1>JakeJohnLaneAwesomeGame</h1>
+    
+    <script>
+    
+$(function() {
+
+    // create an new instance of a pixi stage
+    var stage = new PIXI.Stage(0xFFFFFF);
+
+    // create a renderer instance
+    var renderer = new PIXI.autoDetectRenderer(1024, 640);
+    
+    // set the canvas width and height to fill the screen
+    renderer.view.style.display = "block";
+    renderer.view.style.width = "100%"
+    renderer.view.style.height = "100%"
+
+    // add the renderer view element to the DOM
+    document.body.appendChild(renderer.view);
+
+    requestAnimFrame( animate );
+
+    var game = {};
+    game.players = {}; // map id->player
+    game.attacks = {}; // map id->attack
+    
+    function animate() {
+        requestAnimFrame( animate );
+        renderer.render(stage);
+    }
+    
+    var ws = new WebSocket("ws://127.0.0.1:9000/");
+    
+    ws.onopen = function() {
+        console.log("socket opened");
+    };
+    
+    ws.onmessage = function (evt) {
+    	var data = JSON.parse(evt.data);
+    	//console.log(data);
+    	data.players.forEach(function(player) {
+        	var id = player.id;
+        	if (game.players[id] == null) {
+        		// register new player
+        		// create a texture from an image path
+        	    var texture = PIXI.Texture.fromImage("img/wizard-sm.png");
+        		// create a new Sprite
+        		game.players[id] = new PIXI.Sprite(texture);
+        		// center
+        		game.players[id].anchor.x = 0.5;
+        		game.players[id].anchor.y = 0.5;
+        		// position
+        		game.players[id].position.x = player.xPos;
+        		game.players[id].position.y = player.yPos;
+        		stage.addChild(game.players[id]);
+        	}
+        	else {
+        		game.players[id].position.x = player.xPos;
+        		game.players[id].position.y = player.yPos;
+        	}
+        });
+    };
+    
+    ws.onclose = function() {
+        console.log("socket closed");
+    };
+    
+    ws.onerror = function(err) {
+        console.log("error: " + err.data);
+    };
+    
+});
+
+    </script>
+
+    </body>
+</html>

@@ -1,27 +1,13 @@
 package com.unikitty.project3;
 
-import java.net.InetAddress;
-
-public class Player {
-	private InetAddress IPAddress;
-	private int port;
-	private PlayerEntity myGameState;
+public class Player extends GameEntity {
 	
-	public Player(InetAddress IPAddress, int port, int id) {
-		this.IPAddress = IPAddress;
-		this.port = port;
-		myGameState = new PlayerEntity(5, 5, id);
-	}
-	
-	public int getPort() {
-		return port;
-	}
-	
-	public InetAddress getIPAddress() {
-		return IPAddress;
-	}
-
-	public PlayerEntity getGameState() {
-		return myGameState;
+    public Player() {}
+    
+	// takes initial x and y and player ID
+	public Player(int x, int y, int identifier) {
+		xPos = x;
+		yPos = y;
+		id = identifier;
 	}
 }

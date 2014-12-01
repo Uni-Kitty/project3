@@ -1,13 +1,6 @@
 package com.unikitty.project3;
 
-import java.io.IOException;
-import java.net.DatagramPacket;
-import java.net.DatagramSocket;
-import java.net.InetAddress;
 import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.codehaus.jackson.map.ObjectMapper;
@@ -30,26 +23,27 @@ import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
  */
 public class Main {
     
-	private static Map<InetAddress, Player> playersInGame = new HashMap<InetAddress, Player>();
-	private static Game gameRepresentation = new Game();
-	private static int serverPort = 9999;
-	private static int clientPort = 9998;
+    public static final int PORT = 9000;
+    public static final int BROADCAST_DELAY = 15;
+    
+	private static Game game = new Game();
+	private static HashMap<Session, Player> playersInGame = new HashMap<Session, Player>();
 	private static ObjectMapper mapper = new ObjectMapper(); // mapper for obj<-->JSON
 	private static AtomicInteger id = new AtomicInteger(); // avoid race conditions, use atomic int for ids
-	private static DatagramSocket serverSocket;
-	private static DatagramSocket clientSocket;
 	
     public static void main( String[] args ) {
         startWebSocketServer();
     }
     
     private static void startWebSocketServer() {
+        startMockGame();
+        startBroadcasting();
         try {
-            Server server = new Server(8080);
+            Server server = new Server(PORT);
             WebSocketHandler wsHandler = new WebSocketHandler() {
                 @Override
                 public void configure(WebSocketServletFactory factory) {
-                    factory.register(MyWebSocketHandler.class);
+                    factory.register(ClientSocketHandler.class);
                 }
             };
             server.setHandler(wsHandler);
@@ -65,8 +59,77 @@ public class Main {
         }
     }
     
+    private static void startBroadcasting() {
+        new Thread(new GameBroadcaster()).start();
+    }
+    
+    private static void startMockGame() {
+        Player p1 = new Player(200, 300, getNextId());
+        Player p2 = new Player(500, 300, getNextId());
+        Player p3 = new Player(800, 300, getNextId());
+        game.addPlayer(p1);
+        game.addPlayer(p2);
+        game.addPlayer(p3);
+        new Thread(new MockGameRunner()).start();
+    }
+    
+    // This thing broadcasts to all active sessions
+    private static class GameBroadcaster implements Runnable {
+        
+        public void run() {
+            while (true) {
+                try {
+                    for (Session session : playersInGame.keySet()) {
+                        if (session.isOpen()) // TODO: handle this better, do we disconnect player if session goes bad?
+                            session.getRemote().sendString(mapper.writeValueAsString(game));
+                    }
+                    Thread.sleep(BROADCAST_DELAY);
+                }
+                catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+        
+    }
+    
+    // Temporary thing, makes mock wizards run around in the game
+    private static class MockGameRunner implements Runnable {
+        
+        public void run() {
+            int i = 0;
+            while (true) {
+                if (i == 1000000)
+                    i = 0;
+                i++;
+                try {
+                    int j = i % 400;
+                    int xDelta = 0;
+                    int yDelta = 0;
+                    if (j > 300)
+                        xDelta = 1;
+                    else if (j > 200)
+                        yDelta = 1;
+                    else if (j > 100)
+                        xDelta = -1;
+                    else
+                        yDelta = -1;
+                    for (Player p : game.getPlayers()) {
+                        p.xPos += xDelta;
+                        p.yPos += yDelta;
+                    }
+                    Thread.sleep(10);
+                }
+                catch (Exception e) {
+                    
+                }
+            }
+        }
+        
+    }
+    
     @WebSocket
-    public static class MyWebSocketHandler {
+    public static class ClientSocketHandler {
 
         @OnWebSocketClose
         public void onClose(int statusCode, String reason) {
@@ -80,30 +143,39 @@ public class Main {
 
         @OnWebSocketConnect
         public void onConnect(Session session) {
+            playersInGame.put(session, createNewPlayer());
             System.out.println("Connect: " + session.getRemoteAddress().getAddress());
-            try {
-                session.getRemote().sendString("Success, you connected to me!");
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
         }
 
         @OnWebSocketMessage
         public void onMessage(String message) {
+            // TODO: handle incoming messages from clients
             System.out.println("Message: " + message);
         }
     }
     
+    private static Player createNewPlayer() {
+        // TODO: register new player with a fresh id etc
+        return new Player();
+    }
+    
+    // Fetches the next unique id
+    private static int getNextId() {
+        return id.incrementAndGet();
+    }
+    
+    /* OLD CODE
+    
     private static void startUDPServer() {
         try {
-            serverSocket = new DatagramSocket(serverPort);
-            System.out.println("Server udp started on port " + serverPort);
+            //serverSocket = new DatagramSocket(serverPort);
+            System.out.println("Server udp started on port " + PORT);
             ExecutorService threadPool = Executors.newCachedThreadPool(); // thread pool to avoid creating too many threads
             while (true) {
                 try { // need another try inside this loop so the server doesn't die on an error
                     byte[] receivedData = new byte[1024];
                     DatagramPacket receivedPacket = new DatagramPacket(receivedData, receivedData.length);
-                    serverSocket.receive(receivedPacket);
+                    //serverSocket.receive(receivedPacket);
                     threadPool.execute(new PacketHandler(receivedPacket));
                 }
                 catch (IOException e) {
@@ -120,21 +192,6 @@ public class Main {
         }
     }
     
-    private static void sendHelloWorldUDP(InetAddress address) {
-        String hello = "Hello udp world";
-        byte[] data = hello.getBytes();
-        DatagramPacket packet = new DatagramPacket(data, data.length, address, clientPort);
-        try {
-            serverSocket.send(packet);
-        }
-        catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-    
-    /**
-     * Worker class to handle each request as it comes in
-     */
     private static class PacketHandler implements Runnable {
         
         private DatagramPacket receivedPacket;
@@ -143,9 +200,6 @@ public class Main {
             this.receivedPacket = receivedPacket;
         }
         
-        /**
-         * Main method to handle requests as they come in
-         */
         public void run() {
             InetAddress IPAddress = receivedPacket.getAddress();
             if (playersInGame.keySet().contains(IPAddress)) {
@@ -159,15 +213,11 @@ public class Main {
                 playersInGame.put(IPAddress, newPlayer);
                 gameRepresentation.addPlayer(newPlayer.getGameState());
             }
-            
-            // this will go away, here for just getting things working
-            sendHelloWorldUDP(IPAddress);
         }
         
     }
+
+*/
     
-    // Fetches the next unique id
-    private static int getNextId() {
-        return id.incrementAndGet();
-    }
+    
 }
