@@ -23,7 +23,7 @@ import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
  */
 public class Main {
     
-    public static final int PORT = 9000;
+    public static final int PORT = 9999;
     public static final int BROADCAST_DELAY = 15;
     
 	private static Game game = new Game();
