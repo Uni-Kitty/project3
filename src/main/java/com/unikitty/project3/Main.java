@@ -96,8 +96,10 @@ public class Main {
     private static class MockGameRunner implements Runnable {
         
         public void run() {
-            int i = Integer.MIN_VALUE;
+            int i = 0;
+            int max = Integer.MAX_VALUE - (Integer.MAX_VALUE % 400); // trying to keep the damn wizards from running off the screen
             while (true) {
+                if (i == max);
                 i++;
                 try {
                     int j = i % 400;
