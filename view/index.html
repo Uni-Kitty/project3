@@ -7,12 +7,20 @@
             margin: 0;
             padding: 0;
             background-color: #000000;
+            text-align: center;
+            font-family: "Courier New", monospace;
+            color: white;
         }
         
         h1 {
-            font-family: "Courier New", monospace;
-            text-align: center;
-            color: white;
+        
+        }
+        
+        #pingBox {
+            position: fixed;
+            top: 25px;
+            right: 25px;
+            color: #00FF26;
         }
     </style>
     <script src="pixi.js"></script>
@@ -20,6 +28,10 @@
 
 </head>
 <body>
+    
+    <div id="pingBox">
+        PING: <span id="pingNum">100</span> ms
+    </div>
 
     <h1>JakeJohnLaneAwesomeGame</h1>
     
@@ -34,14 +46,14 @@ $(function() {
     var renderer = new PIXI.autoDetectRenderer(1024, 640);
     
     // set the canvas width and height to fill the screen
-    renderer.view.style.display = "block";
-    renderer.view.style.width = "100%"
-    renderer.view.style.height = "100%"
+    // renderer.view.style.display = "block";
 
     // add the renderer view element to the DOM
     document.body.appendChild(renderer.view);
 
     requestAnimFrame( animate ); // I guess this starts a loop and keeps animating. Magic!
+    
+    var userid = 0;
 
     var game = {};
     game.players = {}; // map id->player
@@ -52,36 +64,50 @@ $(function() {
         renderer.render(stage);
     }
     
-    var ws = new WebSocket("ws://54.69.151.4:9999/");
+    //var ws = new WebSocket("ws://54.69.151.4:9999/");
+    var ws = new WebSocket("ws://127.0.0.1:9999/");
     
     ws.onopen = function() {
         console.log("socket opened");
     };
     
     ws.onmessage = function (evt) {
-    	var data = JSON.parse(evt.data);
-    	//console.log(data);
-    	data.players.forEach(function(player) {
-        	var id = player.id;
-        	if (game.players[id] == null) {
-        		// register new player
-        		// create a texture from an image path
-        	    var texture = PIXI.Texture.fromImage("img/wizard-sm.png");
-        		// create a new Sprite
-        		game.players[id] = new PIXI.Sprite(texture);
-        		// center the sprite
-        		game.players[id].anchor.x = 0.5;
-        		game.players[id].anchor.y = 0.5;
-        		// position
-        		game.players[id].position.x = player.xPos;
-        		game.players[id].position.y = player.yPos;
-        		stage.addChild(game.players[id]);
-        	}
-        	else {
-        		game.players[id].position.x = player.xPos;
-        		game.players[id].position.y = player.yPos;
-        	}
-        });
+    	var message = JSON.parse(evt.data);
+    	var data = JSON.parse(message.data);
+    	//console.log(message);
+    	switch (message.type) {
+    	case ("welcome"):
+    	    console.log("welcome msg received, id: " + message.id);
+    	    userid = message.id;
+    	    break;
+    	case ("ping"):
+            var ping = new Date().getTime() - message.data;
+            // make this go to the ui
+            break;
+    	default:
+        	data.players.forEach(function(player) {
+            	var id = player.id;
+            	if (game.players[id] == null) {
+            		// register new player
+            		// create a texture from an image path
+            	    var texture = PIXI.Texture.fromImage("img/wizard-sm.png");
+            		// create a new Sprite
+            		game.players[id] = new PIXI.Sprite(texture);
+            		// center the sprite
+            		game.players[id].anchor.x = 0.5;
+            		game.players[id].anchor.y = 0.5;
+            		// position
+            		game.players[id].position.x = player.xPos;
+            		game.players[id].position.y = player.yPos;
+            		stage.addChild(game.players[id]);
+            	}
+            	else {
+            		game.players[id].position.x = player.xPos;
+            		game.players[id].position.y = player.yPos;
+            	}
+            });
+            break;
+        }
     };
     
     ws.onclose = function() {
@@ -91,6 +117,18 @@ $(function() {
     ws.onerror = function(err) {
         console.log("error: " + err.data);
     };
+    
+    // send ping requests
+    setInterval(function() {
+        if (userid != 0) { // has the welcome message arrived?
+            var message = {};
+            message.type = "ping";
+            message.id = userid;
+            message.data = new Date().getTime();
+            ws.send(JSON.stringify(message));
+        }
+    }, 500);
+    
     
 });
 
