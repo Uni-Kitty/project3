@@ -1,5 +1,6 @@
 package com.unikitty.project3;
 
+import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -41,6 +42,7 @@ public class Main {
     
 	private static Game game = new Game(); // the state of the game
 	private static ConcurrentMap<Integer, Player> playersInGame = new ConcurrentHashMap<Integer, Player>();
+	private static ConcurrentMap<Integer, Attack> attacksInGame = new ConcurrentHashMap<Integer, Attack>();
 	private static ConcurrentMap<Integer, Session> playerSessions = new ConcurrentHashMap<Integer, Session>();
 	private static ObjectMapper mapper = new ObjectMapper(); // mapper for obj<-->JSON
 	private static AtomicInteger id = new AtomicInteger(1); // avoid race conditions, use atomic int for ids
@@ -102,6 +104,7 @@ public class Main {
 	                	Attack a = (Attack) m.getData();
 	                	a.setId(getNextId());
 	                	game.addAttack(a);
+	                	attacksInGame.put(a.getId(), a);
 	                	// TODO: keep track of attack location
 	                	//	decide if it hits another player in its trajectory
 	                	//  figure out how we want to update the positon of the attack
@@ -197,10 +200,14 @@ public class Main {
                 	assignPlayersToGrid(playerGrid, game.getPlayers());
                 	
                 	// update Attack positions and register any hits
-                	for (Attack a: game.getAttacks()) {
-                		a.xPos = (float) (a.xPos + a.xVelocity * (BROADCAST_DELAY / 1000.0));
-                		a.yPos = (float) (a.yPos + a.yVelocity * (BROADCAST_DELAY / 1000.0));
-                		//if ()
+                	Iterator<Attack> it = game.getAttacks().iterator();
+                	while(it.hasNext()) {
+                		Attack a = it.next();
+                		a.xPos += a.getxVelocity();
+                		a.yPos += a.getyVelocity();
+                		if (!inArena(a) || isHit(a, playerGrid)) {
+                			it.remove();
+                		}
                 	}
                 	
                     if (player.xPos == 200 && player.yPos == 200) {
@@ -230,8 +237,46 @@ public class Main {
         }    
     }
     
-    private static void assignPlayersToGrid(int[][] gird, Set<Player> players) {
+    private static boolean inArena(Attack a) {
+    	float x = a.getxPos();
+    	float y = a.getyPos();
+    	if (x < 0 || x >= ARENA_WIDTH || y < 0 || y >= ARENA_HEIGHT) {
+    		return false;
+    	} else {
+    		return true;
+    	}
+    }
+    
+    private static void assignPlayersToGrid(int[][] grid, Set<Player> players) {
     	for (Player p: players) {
+    		int row = ((int) p.getxPos()) / CELL_SIZE;
+     		int col = ((int) p.getyPos()) / CELL_SIZE;
+     		grid[row][col] = p.getId();
+    	}
+    }
+    
+    // checks each surrounding cell of 
+    private static boolean isHit(Attack a, int[][] grid) {
+    	int row = ((int) a.getxPos()) / CELL_SIZE;
+ 		int col = ((int) a.getyPos()) / CELL_SIZE;
+    	for (int i = -1; i < 1; i++) {
+    		for (int j = -1; j < 1; j++) {
+    			int x = row + i;
+    			int y = col + j;
+    			if (inBounds(x, y, grid) && (grid[x][y] != 0)) {
+    				int playerHitId = grid[x][y];
+    				return true;
+    			}
+    		}
+    	}
+    	return false;
+    }
+    
+    private static boolean inBounds(int x, int y, int[][] grid) {
+    	if (x < 0 || x >= grid.length || y < 0 || y > grid[0].length) {
+    		return false;
+    	} else {
+    		return true;
     	}
     }
     
