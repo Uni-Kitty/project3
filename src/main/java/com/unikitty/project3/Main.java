@@ -94,19 +94,23 @@ public class Main {
 	                    s.getRemote().sendString(message);
 	                    break;
 	                case (ATTACK):  // register the attack in the game
-	                	Attack a = mapper.readValue(m.getData(), Attack.class);
+	                	//Attack a = (Attack) mapper.readValue(m.getData(), Object.class);
+	                	Attack a = (Attack) m.getData();
 	                	a.setId(getNextId());
 	                	game.addAttack(a);
 	                	// TODO: keep track of attack location
 	                	//	decide if it hits another player in its trajectory
 	                	//  figure out how we want to update the positon of the attack
 	                	//  perhaps before every broadcast we update the attack positions
+	                	break;
 	                case (PLAYER_UPDATE):
-	                	Player newInfo = mapper.readValue(m.getData(), Player.class);
+	                	//Player newInfo = mapper.readValue(m.getData(), Player.class);
+	                	Player newInfo = (Player) m.getData();
 	                	int identifier = newInfo.getId();
 	                	Player oldInfo = playersInGame.get(identifier);
 	                	game.updatePlayer(oldInfo, newInfo);  // note: here we remove the old player object and add the new one
 	                	playersInGame.put(identifier, newInfo);
+	                	break;
                 }
             }
             catch (Exception e) {
@@ -153,7 +157,7 @@ public class Main {
                 try {
                     Message m = new Message();
                     m.setType(UPDATE);
-                    m.setData(mapper.writeValueAsString(game));
+                    m.setData(game);
                     String message = mapper.writeValueAsString(m);
                     for (Session session : playerSessions.values()) {
                         if (session.isOpen()) { // TODO: handle this better, do we disconnect player if session goes bad?
