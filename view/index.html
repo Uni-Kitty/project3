@@ -41,6 +41,7 @@ $(function() {
 
     // create an new instance of a pixi stage
     var stage = new PIXI.Stage(0xFFFFFF);
+    stage.interactive = true;
 
     // create a renderer instance
     var renderer = new PIXI.autoDetectRenderer(1024, 640);
@@ -64,8 +65,8 @@ $(function() {
         renderer.render(stage);
     }
     
-    // var ws = new WebSocket("ws://127.0.0.1:9999/");
-    var	ws = new WebSocket("ws://54.69.151.4:9999/");
+    var ws = new WebSocket("ws://127.0.0.1:9999/");
+    // var ws = new WebSocket("ws://54.69.151.4:9999/");
     
     ws.onopen = function() {
         console.log("socket opened");
@@ -118,6 +119,25 @@ $(function() {
         console.log("error: " + err.data);
     };
     
+    stage.click = function(data) {
+        var attack = {};
+        attack.xPos = 0; // TODO: get position of player and put these here
+        attack.yPos = 0;
+        var totalVelocity = 10; // TODO: get this from player
+        var xClick = data.global.x;
+        var yClick = data.global.y;
+        var xDelta = xClick - attack.xPos;
+        var yDelta = yClick - attack.yPos;
+        var d = Math.sqrt((xDelta * xDelta) + (yDelta * yDelta));
+        console.log(d);
+        var factor = 10 / d;
+        attack.xVelocity = xDelta * factor;
+        attack.yVelocity = yDelta * factor;
+        attack.ownerID = userid;
+        var message = {type:"attack",id:userid,data:attack};
+        ws.send(JSON.stringify(message));
+    }
+    
     // send ping requests
     setInterval(function() {
         if (userid != 0) { // has the welcome message arrived?
@@ -127,7 +147,7 @@ $(function() {
             message.data = new Date().getTime();
             ws.send(JSON.stringify(message));
         }
-    }, 2500);
+    }, 2000);
     
     
 });
