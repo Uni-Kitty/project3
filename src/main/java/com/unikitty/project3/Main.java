@@ -160,7 +160,7 @@ public class Main {
         public void run() {
             while (true) {
                 try {
-                    Message m = new Message();
+                    Message<Game> m = new Message<Game>();
                     m.setType(UPDATE);
                     m.setData(game);
                     String message = mapper.writeValueAsString(m);
@@ -200,7 +200,7 @@ public class Main {
                 	for (Attack a: game.getAttacks()) {
                 		a.xPos = (float) (a.xPos + a.xVelocity * (BROADCAST_DELAY / 1000.0));
                 		a.yPos = (float) (a.yPos + a.yVelocity * (BROADCAST_DELAY / 1000.0));
-                		if ()
+                		//if ()
                 	}
                 	
                     if (player.xPos == 200 && player.yPos == 200) {
@@ -231,7 +231,8 @@ public class Main {
     }
     
     private static void assignPlayersToGrid(int[][] gird, Set<Player> players) {
-    	
+    	for (Player p: players) {
+    	}
     }
     
     
