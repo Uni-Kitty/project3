@@ -10,6 +10,11 @@ public class Game {
 	
 	public Game() {}
 
+	public void updatePlayer(Player oldInfo, Player newInfo) {
+		players.remove(oldInfo);
+		players.add(newInfo);
+	}
+	
 	public void addAttack(Attack a) {
 		attacks.add(a);
 	}

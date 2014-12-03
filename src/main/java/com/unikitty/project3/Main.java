@@ -28,8 +28,10 @@ public class Main {
     public static final int PORT = 9999;
     public static final int BROADCAST_DELAY = 15;
     public static final String PING = "ping";
+    public static final String ATTACK = "attack";
     public static final String UPDATE = "update";
     public static final String WELCOME = "welcome";
+    public static final String MOVEMENT = "movement";
     
 	private static Game game = new Game(); // the state of the game
 	private static HashMap<Integer, Player> playersInGame = new HashMap<Integer, Player>();
@@ -84,10 +86,23 @@ public class Main {
             try {
                 Message m = mapper.readValue(message, Message.class);
                 switch (m.getType()) {
-                case (PING): // this is a ping request, send the same message back to correct player
-                    Session s = playerSessions.get(m.getId());
-                    s.getRemote().sendString(message);
-                    break;
+	                case (PING): // this is a ping request, send the same message back to correct player
+	                    Session s = playerSessions.get(m.getId());
+	                    s.getRemote().sendString(message);
+	                    break;
+	                case (ATTACK):  // register the attack in the game
+	                	Attack a = mapper.readValue(m.getData(), Attack.class);
+	                	game.addAttack(a);
+	                	// TODO: keep track of attack location
+	                	//	decide if it hits another player in its trajectory
+	                	//  figure out how we want to update the positon of the attack
+	                	//  perhaps before every broadcast we update the attack positions
+	                case (MOVEMENT):
+	                	Player newInfo = mapper.readValue(m.getData(), Player.class);
+	                	int identifier = newInfo.getId();
+	                	Player oldInfo = playersInGame.get(identifier);
+	                	game.updatePlayer(oldInfo, newInfo);  // note: here we remove the old player object and add the new one
+	                	playersInGame.put(identifier, newInfo);
                 }
             }
             catch (Exception e) {
