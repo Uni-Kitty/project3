@@ -103,12 +103,17 @@ public class Main {
 	                	Message<Attack> m = mapper.readValue(message, new TypeReference<Message<Attack>>() {});
 	                	Attack a = (Attack) m.getData();
 	                	a.setId(getNextId());
-	                	game.addAttack(a);
-	                	attacksInGame.put(a.getId(), a);
-	                	// TODO: keep track of attack location
-	                	//	decide if it hits another player in its trajectory
-	                	//  figure out how we want to update the positon of the attack
-	                	//  perhaps before every broadcast we update the attack positions
+	                	Player attackOwner = playersInGame.get(a.getOwnerID());
+	                	int ammo = attackOwner.getammo();
+	                	if (ammo > 0 ) {
+		                	attackOwner.setammo(ammo - 1);
+		                	game.addAttack(a);
+		                	attacksInGame.put(a.getId(), a);
+		                	// TODO: keep track of attack location
+		                	//	decide if it hits another player in its trajectory
+		                	//  figure out how we want to update the positon of the attack
+		                	//  perhaps before every broadcast we update the attack positions
+	                	}
 	                	break;
 	                case (PLAYER_UPDATE):
 	                	//Player newInfo = mapper.readValue(m.getData(), Player.class);
