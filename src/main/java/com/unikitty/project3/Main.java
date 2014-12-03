@@ -1,7 +1,6 @@
 package com.unikitty.project3;
 
-import java.net.InetAddress;
-import java.util.HashMap;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -9,6 +8,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.codehaus.jackson.JsonGenerator;
 import org.codehaus.jackson.JsonParser;
 import org.codehaus.jackson.map.ObjectMapper;
+import org.codehaus.jackson.type.TypeReference;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
@@ -35,6 +35,9 @@ public class Main {
     public static final String UPDATE = "update";
     public static final String WELCOME = "welcome";
     public static final String PLAYER_UPDATE = "player_update";
+    public static final int ARENA_WIDTH = 640;
+    public static final int ARENA_HEIGHT = 1020;
+    public static final int CELL_SIZE = 5;
     
 	private static Game game = new Game(); // the state of the game
 	private static ConcurrentMap<Integer, Player> playersInGame = new ConcurrentHashMap<Integer, Player>();
@@ -71,7 +74,7 @@ public class Main {
             Player newPlayer = createNewPlayer();
             playersInGame.put(newPlayer.getId(), newPlayer);
             playerSessions.put(newPlayer.getId(), session);
-            Message m = new Message();
+            Message<Object> m = new Message<Object>();
             m.setId(newPlayer.getId());
             m.setType(WELCOME);
             try {
@@ -87,14 +90,15 @@ public class Main {
             // TODO: handle incoming messages from clients, I guess this would be the clients sending attack info
             System.out.println("Message: " + message);
             try {
-                Message m = mapper.readValue(message, Message.class);
-                switch (m.getType()) {
+            	Message<Object> msg = mapper.readValue(message, new TypeReference<Message<Object>>() {});
+                switch (msg.getType()) {
 	                case (PING): // this is a ping request, send the same message back to correct player
-	                    Session s = playerSessions.get(m.getId());
+	                    Session s = playerSessions.get(msg.getId());
 	                    s.getRemote().sendString(message);
 	                    break;
 	                case (ATTACK):  // register the attack in the game
 	                	//Attack a = (Attack) mapper.readValue(m.getData(), Object.class);
+	                	Message<Attack> m = mapper.readValue(message, new TypeReference<Message<Attack>>() {});
 	                	Attack a = (Attack) m.getData();
 	                	a.setId(getNextId());
 	                	game.addAttack(a);
@@ -105,7 +109,8 @@ public class Main {
 	                	break;
 	                case (PLAYER_UPDATE):
 	                	//Player newInfo = mapper.readValue(m.getData(), Player.class);
-	                	Player newInfo = (Player) m.getData();
+	                	Message<Player> m2 = mapper.readValue(message, new TypeReference<Message<Player>>() {});
+	                	Player newInfo = (Player) m2.getData();
 	                	int identifier = newInfo.getId();
 	                	Player oldInfo = playersInGame.get(identifier);
 	                	game.updatePlayer(oldInfo, newInfo);  // note: here we remove the old player object and add the new one
@@ -187,11 +192,17 @@ public class Main {
             int yDelta = 1;
             while (true) {
                 try {
-                	// update Attack positions
+                	// build player grid
+                	int[][] playerGrid = new int[ARENA_HEIGHT / CELL_SIZE][ARENA_WIDTH / CELL_SIZE];
+                	assignPlayersToGrid(playerGrid, game.getPlayers());
+                	
+                	// update Attack positions and register any hits
                 	for (Attack a: game.getAttacks()) {
                 		a.xPos = (float) (a.xPos + a.xVelocity * (BROADCAST_DELAY / 1000.0));
                 		a.yPos = (float) (a.yPos + a.yVelocity * (BROADCAST_DELAY / 1000.0));
+                		if ()
                 	}
+                	
                     if (player.xPos == 200 && player.yPos == 200) {
                         xDelta = 0;
                         yDelta = 1;
@@ -216,9 +227,13 @@ public class Main {
                     e.printStackTrace();
                 }
             }
-        }
-        
+        }    
     }
+    
+    private static void assignPlayersToGrid(int[][] gird, Set<Player> players) {
+    	
+    }
+    
     
     private static Player createNewPlayer() {
         // TODO: what all do we have to do here, adding a new player to the game on the server side
