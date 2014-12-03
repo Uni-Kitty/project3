@@ -271,6 +271,14 @@ public class Main {
     			int y = col + j;
     			if (inBounds(x, y, grid) && (grid[x][y] != 0)) {
     				int playerHitId = grid[x][y];
+    				Player playerHit = playersInGame.get(playerHitId);
+    				Player attackOwner = playersInGame.get(a.getOwnerID());
+    				playerHit.setcurrHP(playerHit.getcurrHP() - a.getAtkPwr());
+    				attackOwner.sethitCount(attackOwner.gethitCount() + 1);
+    				if (playerHit.getcurrHP() <= 0) {
+    					// kill
+    					attackOwner.setkills(attackOwner.getkills() + 1);
+    				}
     				return true;
     			}
     		}
