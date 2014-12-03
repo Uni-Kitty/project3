@@ -5,7 +5,7 @@ public class Message {
     
     private String type;
     private int id;
-    private String data;
+    private Object data;
     
     public Message() {}
     
@@ -17,11 +17,11 @@ public class Message {
         this.type = type;
     }
 
-    public String getData() {
+    public Object getData() {
         return data;
     }
 
-    public void setData(String data) {
+    public void setData(Object data) {
         this.data = data;
     }
 

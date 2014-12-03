@@ -3,46 +3,12 @@ package com.unikitty.project3;
 public class GameEntity {
     
 	protected int id;
-	protected int xPos;
-	protected int yPos;
-	protected int direction;
-	protected int speed;
+	protected float xPos;
+	protected float yPos;
+	protected float xVelocity;
+	protected float yVelocity;
 	
 	public GameEntity() {}
-	
-	public int getDirection() {
-		return direction;
-	}
-	
-	public void setDirection(int degree) {
-		assert(direction > 0 && direction < 361);
-		direction = degree;
-	}
-	
-	public int getSpeed() {
-		return speed;
-	}
-	
-	public void setSpeed(int s) {
-		// check values later once range decided
-		speed = s;
-	}
-	
-	public int getxPos() {
-        return xPos;
-    }
-
-    public void setxPos(int xPos) {
-        this.xPos = xPos;
-    }
-
-    public int getyPos() {
-        return yPos;
-    }
-
-    public void setyPos(int yPos) {
-        this.yPos = yPos;
-    }
 
 	public int getId() {
 		return id;
@@ -50,5 +16,37 @@ public class GameEntity {
 
 	public void setId(int id) {
 		this.id = id;
+	}
+
+	public float getxPos() {
+		return xPos;
+	}
+
+	public void setxPos(float xPos) {
+		this.xPos = xPos;
+	}
+
+	public float getyPos() {
+		return yPos;
+	}
+
+	public void setyPos(float yPos) {
+		this.yPos = yPos;
+	}
+
+	public float getxVelocity() {
+		return xVelocity;
+	}
+
+	public void setxVelocity(float xVelocity) {
+		this.xVelocity = xVelocity;
+	}
+
+	public float getyVelocity() {
+		return yVelocity;
+	}
+
+	public void setyVelocity(float yVelocity) {
+		this.yVelocity = yVelocity;
 	}
 }
