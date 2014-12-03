@@ -3,13 +3,13 @@ package com.unikitty.project3;
 public class Attack extends GameEntity {
 	private int ownerID;
 	
-	public Attack(int owner, int attackID, int x, int y, int dir, int speed) {
-		id = attackID;
+	public Attack(int owner, int attackID, float x, float y, float xVel, float yVel) {
 		ownerID = owner;
+		id = attackID;
 		xPos = x;
 		yPos = y;
-		direction = dir;
-		this.speed = speed;
+		xVelocity = xVel;
+		yVelocity = yVel;
 	}
 
 	public int getOwnerID() {

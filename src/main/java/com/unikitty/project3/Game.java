@@ -1,12 +1,14 @@
 package com.unikitty.project3;
 
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class Game {
     
-	private Set<Player> players = new HashSet<Player>();
-	private Set<Attack> attacks = new HashSet<Attack>(); 
+	private Set<Player> players = Collections.synchronizedSet(new HashSet<Player>());
+	private Set<Attack> attacks = Collections.synchronizedSet(new HashSet<Attack>()); 
 	
 	public Game() {}
 

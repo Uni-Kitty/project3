@@ -1,6 +1,9 @@
 package com.unikitty.project3;
 
+import java.net.InetAddress;
 import java.util.HashMap;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.codehaus.jackson.JsonGenerator;
@@ -26,16 +29,16 @@ import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
 public class Main {
     
     public static final int PORT = 9999;
-    public static final int BROADCAST_DELAY = 15;
+    public static final int BROADCAST_DELAY = 20;
     public static final String PING = "ping";
     public static final String ATTACK = "attack";
     public static final String UPDATE = "update";
     public static final String WELCOME = "welcome";
-    public static final String MOVEMENT = "movement";
+    public static final String PLAYER_UPDATE = "player_update";
     
 	private static Game game = new Game(); // the state of the game
-	private static HashMap<Integer, Player> playersInGame = new HashMap<Integer, Player>();
-	private static HashMap<Integer, Session> playerSessions = new HashMap<Integer, Session>();
+	private static ConcurrentMap<Integer, Player> playersInGame = new ConcurrentHashMap<Integer, Player>();
+	private static ConcurrentMap<Integer, Session> playerSessions = new ConcurrentHashMap<Integer, Session>();
 	private static ObjectMapper mapper = new ObjectMapper(); // mapper for obj<-->JSON
 	private static AtomicInteger id = new AtomicInteger(1); // avoid race conditions, use atomic int for ids
 	
@@ -45,7 +48,7 @@ public class Main {
 	}
 	
     public static void main( String[] args ) {
-        startMockGame(); // this will go away eventually, just here to give the front end something to display
+        startGame(); // this will go away eventually, just here to give the front end something to display
         startBroadcasting();
         startWebSocketServer();
     }
@@ -92,12 +95,13 @@ public class Main {
 	                    break;
 	                case (ATTACK):  // register the attack in the game
 	                	Attack a = mapper.readValue(m.getData(), Attack.class);
+	                	a.setId(getNextId());
 	                	game.addAttack(a);
 	                	// TODO: keep track of attack location
 	                	//	decide if it hits another player in its trajectory
 	                	//  figure out how we want to update the positon of the attack
 	                	//  perhaps before every broadcast we update the attack positions
-	                case (MOVEMENT):
+	                case (PLAYER_UPDATE):
 	                	Player newInfo = mapper.readValue(m.getData(), Player.class);
 	                	int identifier = newInfo.getId();
 	                	Player oldInfo = playersInGame.get(identifier);
@@ -136,10 +140,10 @@ public class Main {
         new Thread(new GameBroadcaster()).start();
     }
     
-    private static void startMockGame() {
-        Player p1 = new Player(200, 200, getNextId());
+    private static void startGame() {
+        Player p1 = new Player(200, 200, getNextId(), 0, 0);
         game.addPlayer(p1);
-        new Thread(new MockGameRunner(p1)).start();
+        new Thread(new GameRunner(p1)).start();
     }
     
     // This thing broadcasts to all active sessions
@@ -166,11 +170,11 @@ public class Main {
     }
     
     // Temporary thing, makes mock wizard run around in the game giving the ui something to display
-    private static class MockGameRunner implements Runnable {
+    private static class GameRunner implements Runnable {
         
         private Player player;
         
-        private MockGameRunner(Player p) {
+        private GameRunner(Player p) {
             this.player = p;
         }
         
@@ -179,6 +183,11 @@ public class Main {
             int yDelta = 1;
             while (true) {
                 try {
+                	// update Attack positions
+                	for (Attack a: game.getAttacks()) {
+                		a.xPos = (float) (a.xPos + a.xVelocity * (BROADCAST_DELAY / 1000.0));
+                		a.yPos = (float) (a.yPos + a.yVelocity * (BROADCAST_DELAY / 1000.0));
+                	}
                     if (player.xPos == 200 && player.yPos == 200) {
                         xDelta = 0;
                         yDelta = 1;
@@ -197,7 +206,7 @@ public class Main {
                     }
                     player.xPos += xDelta;
                     player.yPos += yDelta;
-                    Thread.sleep(10);
+                    Thread.sleep(BROADCAST_DELAY);
                 }
                 catch (Exception e) {
                     e.printStackTrace();
