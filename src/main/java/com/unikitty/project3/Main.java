@@ -122,13 +122,9 @@ public class Main {
     }
     
     private static void startMockGame() {
-        Player p1 = new Player(200, 300, getNextId());
-        Player p2 = new Player(500, 300, getNextId());
-        Player p3 = new Player(800, 300, getNextId());
+        Player p1 = new Player(200, 200, getNextId());
         game.addPlayer(p1);
-        game.addPlayer(p2);
-        game.addPlayer(p3);
-        new Thread(new MockGameRunner()).start();
+        new Thread(new MockGameRunner(p1)).start();
     }
     
     // This thing broadcasts to all active sessions
@@ -154,31 +150,38 @@ public class Main {
         }
     }
     
-    // Temporary thing, makes mock wizards run around in the game giving the ui something to display
+    // Temporary thing, makes mock wizard run around in the game giving the ui something to display
     private static class MockGameRunner implements Runnable {
         
+        private Player player;
+        
+        private MockGameRunner(Player p) {
+            this.player = p;
+        }
+        
         public void run() {
-            int i = 0;
-            int max = Integer.MAX_VALUE - (Integer.MAX_VALUE % 400); // trying to keep the damn wizards from running off the screen
+            int xDelta = 0;
+            int yDelta = 1;
             while (true) {
-                if (i == max);
-                i++;
                 try {
-                    int j = i % 400;
-                    int xDelta = 0;
-                    int yDelta = 0;
-                    if (j > 300)
-                        xDelta = 1;
-                    else if (j > 200)
+                    if (player.xPos == 200 && player.yPos == 200) {
+                        xDelta = 0;
                         yDelta = 1;
-                    else if (j > 100)
-                        xDelta = -1;
-                    else
-                        yDelta = -1;
-                    for (Player p : game.getPlayers()) {
-                        p.xPos += xDelta;
-                        p.yPos += yDelta;
                     }
+                    else if (player.xPos == 200 && player.yPos == 400) {
+                        xDelta = 1;
+                        yDelta = 0;
+                    }
+                    else if (player.xPos == 800 && player.yPos == 400) {
+                        xDelta = 0;
+                        yDelta = -1;
+                    }
+                    else if (player.xPos == 800 && player.yPos == 200) {
+                        xDelta = -1;
+                        yDelta = 0;
+                    }
+                    player.xPos += xDelta;
+                    player.yPos += yDelta;
                     Thread.sleep(10);
                 }
                 catch (Exception e) {

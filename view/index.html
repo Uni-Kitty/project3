@@ -30,7 +30,7 @@
 <body>
     
     <div id="pingBox">
-        PING: <span id="pingNum">100</span> ms
+        PING: <span id="pingNum"></span> ms
     </div>
 
     <h1>JakeJohnLaneAwesomeGame</h1>
@@ -64,8 +64,13 @@ $(function() {
         renderer.render(stage);
     }
     
-    //var ws = new WebSocket("ws://54.69.151.4:9999/");
-    var ws = new WebSocket("ws://127.0.0.1:9999/");
+    var ws;
+    try {
+        ws = new WebSocket("ws://127.0.0.1:9999/");
+    }
+    catch(err) {
+    	ws = new WebSocket("ws://54.69.151.4:9999/");
+    }
     
     ws.onopen = function() {
         console.log("socket opened");
@@ -82,7 +87,7 @@ $(function() {
     	    break;
     	case ("ping"):
             var ping = new Date().getTime() - message.data;
-            // make this go to the ui
+            $("#pingNum").text(ping);
             break;
     	default:
         	data.players.forEach(function(player) {
@@ -127,7 +132,7 @@ $(function() {
             message.data = new Date().getTime();
             ws.send(JSON.stringify(message));
         }
-    }, 500);
+    }, 2500);
     
     
 });
