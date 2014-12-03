@@ -25,6 +25,7 @@
     </style>
     <script src="pixi.js"></script>
     <script src="jquery.js"></script>
+    <script src="hotkey_plugin.js"></script>
 
 </head>
 <body>
@@ -85,7 +86,15 @@ $(function() {
             var ping = new Date().getTime() - message.data;
             $("#pingNum").text(ping);
             break;
-    	default:
+    	case ("update"):
+    		var playerIDs = []; // make a set of current ids we are using
+            var attackIDs = [];
+    	    for (id in game.players) {
+    	    	playerIDs.push(id);
+    	    }
+    	    for (id in game.attacks) {
+    	    	attackIDs.push(id);
+    	    }
         	data.players.forEach(function(player) {
             	var id = player.id;
             	if (game.players[id] == null) {
@@ -105,9 +114,37 @@ $(function() {
             	else {
             		game.players[id].position.x = player.xPos;
             		game.players[id].position.y = player.yPos;
+            		playerIDs.pop(id);
             	}
             });
+    	    data.attacks.forEach(function(attack) {
+    	    	var id = attack.id;
+    	    	if (game.attacks[id] == null) {
+    	    		var texture = PIXI.Texture.fromImage("img/fireball-sm.png");
+    	    		game.attacks[id] = new PIXI.Sprite(texture);
+    	    		game.attacks[id].anchor.x = 0.5;
+    	    		game.attacks[id].anchor.y = 0.5;
+    	    		game.attacks[id].position.x = attack.xPos;
+                    game.attacks[id].position.y = attack.yPos;
+                    stage.addChild(game.attacks[id]);
+    	    	}
+    	    	else {
+                    game.attacks[id].position.x = attack.xPos;
+                    game.attacks[id].position.y = attack.yPos;
+                    attackIDs.pop(id);
+    	    	}
+    	    });
+    	    playerIDs.forEach(function(id) {
+    	    	stage.removeChild(game.players[id]);
+    	    });
+            attackIDs.forEach(function(id) {
+                stage.removeChild(game.attacks[id]);
+            });
             break;
+        default:
+        	console.log("unknown message type:");
+            console.log(message);
+        	break;
         }
     };
     
@@ -148,10 +185,85 @@ $(function() {
         }
     }, 2000);
     
+    var MAX_SPEED = 6000;
+    var FRICTION = 0.97;
+    var upArrow = 38;
+    var downArrow = 40;
+    var rightArrow = 39;
+    var leftArrow = 37;
+    var upKey = 87;
+    var downKey = 83;
+    var rightKey = 68;
+    var leftKey = 65;
+
+    var texture = PIXI.Texture.fromImage("img/wizard-sm.png");
+    // create a new Sprite
+    var wizard = new PIXI.Sprite(texture);
+    wizard.anchor.x = 0.5;
+    wizard.anchor.y = 0.5;
+    wizard.position.x = 500;
+    wizard.position.y = 500;
+    stage.addChild(wizard);
     
+    wizard.vx = 0;
+    wizard.vy = 0;
+    wizard.health = 100;
+
+    function accelerate(x, y) {
+        wizard.vx = Math.max(Math.min(MAX_SPEED, wizard.vx + x), -MAX_SPEED);
+        wizard.vy = Math.max(Math.min(MAX_SPEED, wizard.vy + y), -MAX_SPEED);
+    }
+
+    var keys = {};
+    
+    $(document).keydown(function(event) {
+        keys[event.which] = true;
+        var x = 0;
+        var y = 0;
+        console.log(keys);
+        for (var key in keys) {
+            if (key == upArrow || key == upKey) {
+                y += -6000;
+            }
+            if (key == downArrow || key == downKey) {
+                y += 6000;
+            }
+            if (key == leftArrow || key == leftKey) {
+                x += -6000;
+            }
+            if (key == rightArrow || key == rightKey) {
+                x += 6000;
+            }
+        }
+        accelerate(x, y);
+    });
+    
+    $(document).keyup(function(event) {
+        delete keys[event.which];
+    });
+
+    setInterval(function() {
+        wizard.position.x += wizard.vx / 1000;
+        wizard.position.y += wizard.vy / 1000;
+        wizard.vx *= FRICTION;
+        wizard.vy *= FRICTION;
+    }, 20);
 });
 
     </script>
 
     </body>
 </html>
+
+<!-- 
+    
+    $scope.keyDown = function($event) {
+
+    };
+
+    $scope.keyUp = function($event) {
+        
+    };
+    
+    
+     -->
