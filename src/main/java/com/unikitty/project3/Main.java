@@ -116,8 +116,7 @@ public class Main {
 	                	Player newInfo = (Player) m2.getData();
 	                	int identifier = newInfo.getId();
 	                	Player oldInfo = playersInGame.get(identifier);
-	                	game.updatePlayer(oldInfo, newInfo);  // note: here we remove the old player object and add the new one
-	                	playersInGame.put(identifier, newInfo);
+	                	updatePlayerInfo(oldInfo, newInfo);
 	                	break;
                 }
             }
@@ -125,6 +124,13 @@ public class Main {
                 e.printStackTrace();
             }
         }
+    }
+    
+    private static void updatePlayerInfo(Player oldInfo, Player newInfo) {
+    	oldInfo.setxPos(newInfo.getxPos());
+    	oldInfo.setyPos(newInfo.getyPos());
+    	oldInfo.setxVelocity(newInfo.getxVelocity());
+    	oldInfo.setyVelocity(newInfo.getyVelocity());
     }
     
     private static void startWebSocketServer() {
