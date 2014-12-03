@@ -1,11 +1,11 @@
 package com.unikitty.project3;
 
 // Generic message, stores a type and some data
-public class Message {
+public class Message<E> {
     
     private String type;
     private int id;
-    private Object data;
+    private E data;
     
     public Message() {}
     
@@ -17,11 +17,11 @@ public class Message {
         this.type = type;
     }
 
-    public Object getData() {
+    public E getData() {
         return data;
     }
 
-    public void setData(Object data) {
+    public void setData(E data) {
         this.data = data;
     }
 

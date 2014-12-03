@@ -74,8 +74,8 @@ $(function() {
     
     ws.onmessage = function (evt) {
     	var message = JSON.parse(evt.data);
-    	var data = JSON.parse(message.data);
-    	//console.log(message);
+    	//console.log(message.data);
+    	var data = message.data;
     	switch (message.type) {
     	case ("welcome"):
     	    console.log("welcome msg received, id: " + message.id);
@@ -129,7 +129,6 @@ $(function() {
         var xDelta = xClick - attack.xPos;
         var yDelta = yClick - attack.yPos;
         var d = Math.sqrt((xDelta * xDelta) + (yDelta * yDelta));
-        console.log(d);
         var factor = 10 / d;
         attack.xVelocity = xDelta * factor;
         attack.yVelocity = yDelta * factor;
