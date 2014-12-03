@@ -1,7 +1,7 @@
 <!DOCTYPE HTML>
 <html>
 <head>
-    <title>pixi.js example 1</title>
+    <title>JakeJohnLaneAwesomeGame</title>
     <style>
         body {
             margin: 0;
@@ -64,13 +64,8 @@ $(function() {
         renderer.render(stage);
     }
     
-    var ws;
-    try {
-        ws = new WebSocket("ws://127.0.0.1:9999/");
-    }
-    catch(err) {
-    	ws = new WebSocket("ws://54.69.151.4:9999/");
-    }
+    // var ws = new WebSocket("ws://127.0.0.1:9999/");
+    var	ws = new WebSocket("ws://54.69.151.4:9999/");
     
     ws.onopen = function() {
         console.log("socket opened");
