@@ -66,8 +66,8 @@ $(function() {
         renderer.render(stage);
     }
     
-    var ws = new WebSocket("ws://127.0.0.1:9999/");
-    // var ws = new WebSocket("ws://54.69.151.4:9999/");
+    // var ws = new WebSocket("ws://127.0.0.1:9999/");
+    var ws = new WebSocket("ws://54.69.151.4:9999/");
     
     ws.onopen = function() {
         console.log("socket opened");
@@ -184,6 +184,23 @@ $(function() {
             ws.send(JSON.stringify(message));
         }
     }, 2000);
+
+    // send player update
+    setInterval(function() {
+        if (userid != 0) { // has the welcome message arrived?
+            var playerInfo = {};
+            playerInfo.xPos = 200;
+            playerInfo.yPos = 200;
+            playerInfo.id = userid;
+            playerInfo.xVelocity = 0;
+            playerInfo.yVelocity = 0;
+            var message = {};
+            message.type = "player_update";
+            message.id = userid;
+            message.data = playerInfo;
+            ws.send(JSON.stringify(message));
+        }
+    }, 20);
     
     var MAX_SPEED = 6000;
     var FRICTION = 0.97;

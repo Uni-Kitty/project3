@@ -2,6 +2,16 @@ package com.unikitty.project3;
 
 public class Player extends GameEntity {
 	
+  private int maxHP;
+  private int currHP;
+  private int atkDmg;
+  private int ammo;
+  private int kills;
+  private int hitCount;
+  private String type;
+  public static final String WIZARD = "wizard";
+  public static final String RANGER = "ranger";
+
     public Player() {}
     
 	// takes initial x and y and player ID
@@ -12,4 +22,60 @@ public class Player extends GameEntity {
 		xVelocity = xVel;
 		yVelocity = yVel;
 	}
+
+  public int getmaxHP() {
+    return maxHP;
+  }
+
+  public void setmaxHP(int maxHP) {
+    this.maxHP = maxHP;
+  }
+
+  public int getcurrHP() {
+    return currHP;
+  }
+
+  public void setcurrHP(int currHP) {
+    this.currHP = currHP;
+  }
+
+  public int getatkDmg() {
+    return atkDmg;
+  }
+
+  public void setatkDmg(int atkDmg) {
+    this.atkDmg = atkDmg;
+  }
+
+  public int getammo() {
+    return ammo;
+  }
+
+  public void setammo(int ammo) {
+    this.ammo = ammo;
+  }
+
+  public int getkills() {
+    return kills;
+  }
+
+  public void setkills(int kills) {
+    this.kills = kills;
+  }
+
+  public int gethitCount() {
+    return hitCount;
+  }
+
+  public void sethitCount(int hitCount) {
+    this.hitCount = hitCount;
+  }
+
+  public String gettype() {
+    return type;
+  }
+
+  public void settype(String type) {
+    this.type = type;
+  }
 }
