@@ -36,8 +36,8 @@ public class Main {
     public static final String UPDATE = "update";
     public static final String WELCOME = "welcome";
     public static final String PLAYER_UPDATE = "player_update";
-    public static final int ARENA_WIDTH = 640;
-    public static final int ARENA_HEIGHT = 1020;
+    public static final int ARENA_WIDTH = 1000;
+    public static final int ARENA_HEIGHT = 600;
     public static final int CELL_SIZE = 5;
     
 	private static Game game = new Game(); // the state of the game
@@ -73,14 +73,15 @@ public class Main {
 
         @OnWebSocketConnect
         public void onConnect(Session session) {
-            Player newPlayer = createNewPlayer();
+            Player newPlayer = createNewPlayer(Player.WIZARD);
+            game.addPlayer(newPlayer);
             playersInGame.put(newPlayer.getId(), newPlayer);
             playerSessions.put(newPlayer.getId(), session);
             Message<Object> m = new Message<Object>();
             m.setId(newPlayer.getId());
             m.setType(WELCOME);
             try {
-                session.getRemote().sendString(mapper.writeValueAsString(m));
+                session.getRemote().sendStringByFuture(mapper.writeValueAsString(m));
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -89,17 +90,15 @@ public class Main {
 
         @OnWebSocketMessage
         public void onMessage(String message) {
-            // TODO: handle incoming messages from clients, I guess this would be the clients sending attack info
-            System.out.println("Message: " + message);
             try {
             	Message<Object> msg = mapper.readValue(message, new TypeReference<Message<Object>>() {});
                 switch (msg.getType()) {
 	                case (PING): // this is a ping request, send the same message back to correct player
 	                    Session s = playerSessions.get(msg.getId());
-	                    s.getRemote().sendString(message);
+	                    s.getRemote().sendStringByFuture(message);
 	                    break;
-	                case (ATTACK):  // register the attack in the game
-	                	//Attack a = (Attack) mapper.readValue(m.getData(), Object.class);
+	                case (ATTACK):
+	                	//System.out.println(message);
 	                	Message<Attack> m = mapper.readValue(message, new TypeReference<Message<Attack>>() {});
 	                	Attack a = (Attack) m.getData();
 	                	a.setId(getNextId());
@@ -109,10 +108,6 @@ public class Main {
 		                	attackOwner.setammo(ammo - 1);
 		                	game.addAttack(a);
 		                	attacksInGame.put(a.getId(), a);
-		                	// TODO: keep track of attack location
-		                	//	decide if it hits another player in its trajectory
-		                	//  figure out how we want to update the positon of the attack
-		                	//  perhaps before every broadcast we update the attack positions
 	                	}
 	                	break;
 	                case (PLAYER_UPDATE):
@@ -164,8 +159,10 @@ public class Main {
     }
     
     private static void startGame() {
-        Player p1 = new Player(200, 200, getNextId(), 0, 0);
+        Player p1 = createNewPlayer(Player.WIZARD);
         game.addPlayer(p1);
+        p1.setxPos(200);
+        p1.setyPos(200);
         new Thread(new GameRunner(p1)).start();
     }
     
@@ -180,7 +177,7 @@ public class Main {
                     String message = mapper.writeValueAsString(m);
                     for (Session session : playerSessions.values()) {
                         if (session.isOpen()) { // TODO: handle this better, do we disconnect player if session goes bad?
-                            session.getRemote().sendString(message);
+                            session.getRemote().sendStringByFuture(message);
                         }
                     }
                     Thread.sleep(BROADCAST_DELAY);
@@ -217,6 +214,7 @@ public class Main {
                 		a.xPos += a.getxVelocity();
                 		a.yPos += a.getyVelocity();
                 		if (!inArena(a) || isHit(a, playerGrid)) {
+                			attacksInGame.remove(a.getId());
                 			it.remove();
                 		}
                 	}
@@ -248,20 +246,21 @@ public class Main {
         }    
     }
     
+    // are x and y in array bounds
+    private static boolean inBounds(int x, int y, int[][] grid) {
+    	return x >= 0 && x < grid.length && y >= 0 && y < grid[0].length;
+    }
+    
     private static boolean inArena(Attack a) {
     	float x = a.getxPos();
     	float y = a.getyPos();
-    	if (x < 0 || x >= ARENA_WIDTH || y < 0 || y >= ARENA_HEIGHT) {
-    		return false;
-    	} else {
-    		return true;
-    	}
+    	return x > 0 && x < ARENA_WIDTH && y > 0 && y < ARENA_HEIGHT;
     }
     
     private static void assignPlayersToGrid(int[][] grid, Set<Player> players) {
     	for (Player p: players) {
-    		int row = ((int) p.getxPos()) / CELL_SIZE;
-     		int col = ((int) p.getyPos()) / CELL_SIZE;
+    		int row = Math.min(grid.length - 1, ((int) p.getxPos()) / CELL_SIZE);
+     		int col = Math.min(grid[0].length - 1, ((int) p.getyPos()) / CELL_SIZE);
      		grid[row][col] = p.getId();
     	}
     }
@@ -270,15 +269,15 @@ public class Main {
     private static boolean isHit(Attack a, int[][] grid) {
     	int row = ((int) a.getxPos()) / CELL_SIZE;
  		int col = ((int) a.getyPos()) / CELL_SIZE;
-    	for (int i = -1; i < 1; i++) {
-    		for (int j = -1; j < 1; j++) {
+    	for (int i = -1; i <= 1; i++) {
+    		for (int j = -1; j <= 1; j++) {
     			int x = row + i;
     			int y = col + j;
     			if (inBounds(x, y, grid) && (grid[x][y] != 0)) {
     				int playerHitId = grid[x][y];
     				Player playerHit = playersInGame.get(playerHitId);
     				Player attackOwner = playersInGame.get(a.getOwnerID());
-    				playerHit.setcurrHP(playerHit.getcurrHP() - a.getAtkPwr());
+    				playerHit.setcurrHP(playerHit.getcurrHP() - a.getAtkDmg());
     				attackOwner.sethitCount(attackOwner.gethitCount() + 1);
     				if (playerHit.getcurrHP() <= 0) {
     					// kill
@@ -291,81 +290,20 @@ public class Main {
     	return false;
     }
     
-    private static boolean inBounds(int x, int y, int[][] grid) {
-    	if (x < 0 || x >= grid.length || y < 0 || y > grid[0].length) {
-    		return false;
-    	} else {
-    		return true;
-    	}
-    }
     
-    
-    private static Player createNewPlayer() {
-        // TODO: what all do we have to do here, adding a new player to the game on the server side
+    private static Player createNewPlayer(String type) {
         Player p = new Player();
         p.setId(getNextId());
+        p.settype(type);
+        p.setammo(100);
+        p.setmaxHP(10);
+        p.setcurrHP(10);
+        p.setatkDmg(2);
         return p;
     }
     
     // Fetches the next unique id
     private static int getNextId() {
         return id.incrementAndGet();
-    }
-    
-    /* OLD CODE
-    
-    private static void startUDPServer() {
-        try {
-            //serverSocket = new DatagramSocket(serverPort);
-            System.out.println("Server udp started on port " + PORT);
-            ExecutorService threadPool = Executors.newCachedThreadPool(); // thread pool to avoid creating too many threads
-            while (true) {
-                try { // need another try inside this loop so the server doesn't die on an error
-                    byte[] receivedData = new byte[1024];
-                    DatagramPacket receivedPacket = new DatagramPacket(receivedData, receivedData.length);
-                    //serverSocket.receive(receivedPacket);
-                    threadPool.execute(new PacketHandler(receivedPacket));
-                }
-                catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-        catch (Exception e) {
-            System.out.println("Failed to start server, exiting");
-            System.exit(0);
-        }
-        finally {
-            serverSocket.close();
-        }
-    }
-    
-    private static class PacketHandler implements Runnable {
-        
-        private DatagramPacket receivedPacket;
-        
-        private PacketHandler(DatagramPacket receivedPacket) {
-            this.receivedPacket = receivedPacket;
-        }
-        
-        public void run() {
-            InetAddress IPAddress = receivedPacket.getAddress();
-            if (playersInGame.keySet().contains(IPAddress)) {
-                // this player is in game!
-                // it is an attack or a position update
-                String update = new String(receivedPacket.getData());   
-                System.out.println("RECEIVED: " + update);
-            } else {
-                // new player
-                Player newPlayer = new Player(IPAddress, clientPort, getNextId());
-                playersInGame.put(IPAddress, newPlayer);
-                gameRepresentation.addPlayer(newPlayer.getGameState());
-            }
-        }
-        
-    }
-
-*/
-    
-    
+    }   
 }
