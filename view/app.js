@@ -34,7 +34,7 @@ $(function() {
     document.body.appendChild(renderer.view);
     requestAnimFrame( animate );
     
-    player = addElementToStage(RANGER, STAGE_WIDTH / 2, STAGE_HEIGHT / 2);
+    player = addElementToStage(RANGER, STAGE_WIDTH / 2, STAGE_HEIGHT / 2, 0);
     
     function animate() {
         requestAnimFrame( animate );
@@ -42,7 +42,7 @@ $(function() {
     }
     
     // Creates and adds element to stage, returns reference to the element
-    function addElementToStage(image, x, y) {
+    function addElementToStage(image, x, y, rotation) {
     	var imgPath;
     	switch (image) {
     	case WIZARD:
@@ -61,6 +61,7 @@ $(function() {
 		sprite.anchor.y = 0.5;
 		sprite.position.x = x;
 		sprite.position.y = y;
+		sprite.rotation = rotation;
 		stage.addChild(sprite);
 		return sprite;
     }
@@ -103,7 +104,7 @@ $(function() {
             		// update my own stats here
             	}
             	else if (game.players[id] == null) {
-            		game.players[id] = addElementToStage(player.type, player.xPos, player.yPos);
+            		game.players[id] = addElementToStage(player.type, player.xPos, player.yPos, 0);
             	}
             	else {
             		game.players[id].position.x = player.xPos;
@@ -115,7 +116,7 @@ $(function() {
     	    	console.log(attack);
     	    	var id = attack.id;
     	    	if (game.attacks[id] == null) {
-    	    		game.attacks[id] = addElementToStage(attack.type, attack.xPos, attack.yPos);
+    	    		game.attacks[id] = addElementToStage(attack.type, attack.xPos, attack.yPos, attack.rotation);
     	    	}
     	    	else {
                     game.attacks[id].position.x = attack.xPos;
@@ -148,6 +149,7 @@ $(function() {
         console.log("error: " + err.data);
     };
     
+    // send an attack
     stage.click = function(data) {
         var attack = {};
         attack.xPos = player.position.x;
@@ -163,6 +165,8 @@ $(function() {
         attack.yVelocity = yDelta * factor;
         attack.ownerID = userid;
         attack.type = FIREBALL;
+        attack.rotation = Math.atan2(xDelta, yDelta) * -1 + Math.PI / 2;
+        //attack.rotation *= -1;
         var message = {type:ATTACK,id:userid,data:attack};
         ws.send(JSON.stringify(message));
     }

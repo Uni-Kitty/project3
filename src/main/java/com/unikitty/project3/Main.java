@@ -30,7 +30,8 @@ import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
 public class Main {
     
     public static final int PORT = 9999;
-    public static final int BROADCAST_DELAY = 20;
+    public static final int BROADCAST_DELAY = 20; // Game loop delay in ms
+    public static final long PLAYER_TIMEOUT = 5000; // Time to wait before dropping player in ms
     public static final String PING = "ping";
     public static final String ATTACK = "attack";
     public static final String UPDATE = "update";
@@ -103,20 +104,25 @@ public class Main {
 	                	Attack a = (Attack) m.getData();
 	                	a.setId(getNextId());
 	                	Player attackOwner = playersInGame.get(a.getOwnerID());
-	                	int ammo = attackOwner.getammo();
-	                	if (ammo > 0 ) {
-		                	attackOwner.setammo(ammo - 1);
-		                	game.addAttack(a);
-		                	attacksInGame.put(a.getId(), a);
+	                	synchronized (game) {
+		                	int ammo = attackOwner.getammo();
+		                	if (ammo > 0 ) {
+		                		//System.out.println(message);
+			                	attackOwner.setammo(ammo - 1);
+			                	game.addAttack(a);
+			                	attacksInGame.put(a.getId(), a);
+		                	}
 	                	}
 	                	break;
 	                case (PLAYER_UPDATE):
 	                	//Player newInfo = mapper.readValue(m.getData(), Player.class);
 	                	Message<Player> m2 = mapper.readValue(message, new TypeReference<Message<Player>>() {});
-	                	Player newInfo = (Player) m2.getData();
-	                	int identifier = newInfo.getId();
-	                	Player oldInfo = playersInGame.get(identifier);
-	                	updatePlayerInfo(oldInfo, newInfo);
+	                	Player update = (Player) m2.getData();
+	                	int id = update.getId();
+	                	if (playersInGame.containsKey(id)) {
+		                	Player player = playersInGame.get(id);
+		                	updatePlayerInfo(player, update);
+	                	}
 	                	break;
                 }
             }
@@ -126,11 +132,14 @@ public class Main {
         }
     }
     
-    private static void updatePlayerInfo(Player oldInfo, Player newInfo) {
-    	oldInfo.setxPos(newInfo.getxPos());
-    	oldInfo.setyPos(newInfo.getyPos());
-    	oldInfo.setxVelocity(newInfo.getxVelocity());
-    	oldInfo.setyVelocity(newInfo.getyVelocity());
+    private static void updatePlayerInfo(Player player, Player update) {
+    	synchronized (player) {
+	    	player.setxPos(update.getxPos());
+	    	player.setyPos(update.getyPos());
+	    	player.setxVelocity(update.getxVelocity());
+	    	player.setyVelocity(update.getyVelocity());
+	    	player.setLastUpdate(System.currentTimeMillis());
+    	}
     }
     
     private static void startWebSocketServer() {
@@ -171,10 +180,13 @@ public class Main {
         public void run() {
             while (true) {
                 try {
-                    Message<Game> m = new Message<Game>();
-                    m.setType(UPDATE);
-                    m.setData(game);
-                    String message = mapper.writeValueAsString(m);
+                	String message = "";
+                	synchronized (game) {
+	                    Message<Game> m = new Message<Game>();
+	                    m.setType(UPDATE);
+	                    m.setData(game);
+	                    message = mapper.writeValueAsString(m);
+                	}
                     for (Session session : playerSessions.values()) {
                         if (session.isOpen()) { // TODO: handle this better, do we disconnect player if session goes bad?
                             session.getRemote().sendStringByFuture(message);
@@ -203,40 +215,53 @@ public class Main {
             int yDelta = 1;
             while (true) {
                 try {
-                	// build player grid
+                	/*
                 	int[][] playerGrid = new int[ARENA_HEIGHT / CELL_SIZE][ARENA_WIDTH / CELL_SIZE];
                 	assignPlayersToGrid(playerGrid, game.getPlayers());
-                	
                 	// update Attack positions and register any hits
-                	Iterator<Attack> it = game.getAttacks().iterator();
-                	while(it.hasNext()) {
-                		Attack a = it.next();
-                		a.xPos += a.getxVelocity();
-                		a.yPos += a.getyVelocity();
-                		if (!inArena(a) || isHit(a, playerGrid)) {
-                			attacksInGame.remove(a.getId());
-                			it.remove();
-                		}
+                	*/
+                	synchronized (game) {
+	                	Iterator<Attack> it = game.getAttacks().iterator();
+	                	while(it.hasNext()) {
+	                		Attack a = it.next();
+	                		a.xPos += a.getxVelocity();
+	                		a.yPos += a.getyVelocity();
+	                		if (!inArena(a) || /* isHit(a, playerGrid) */ isHitSimple(a, game.getPlayers())) {
+	                			attacksInGame.remove(a.getId());
+	                			it.remove();
+	                		}
+	                	}
+	                	// delete inactive players
+	                	long currentTime = System.currentTimeMillis();
+	                	Iterator<Player> iter = game.getPlayers().iterator();
+	                	while (iter.hasNext()) {
+	                		Player p = iter.next();
+	                		if (currentTime - p.getLastUpdate() > PLAYER_TIMEOUT) {
+	                			iter.remove();
+	                			playersInGame.remove(p.getId());
+	                			sendDisconnectedMessage(p);
+	                		}
+	                	}
+	                    if (player.xPos == 200 && player.yPos == 200) {
+	                        xDelta = 0;
+	                        yDelta = 1;
+	                    }
+	                    else if (player.xPos == 200 && player.yPos == 400) {
+	                        xDelta = 1;
+	                        yDelta = 0;
+	                    }
+	                    else if (player.xPos == 800 && player.yPos == 400) {
+	                        xDelta = 0;
+	                        yDelta = -1;
+	                    }
+	                    else if (player.xPos == 800 && player.yPos == 200) {
+	                        xDelta = -1;
+	                        yDelta = 0;
+	                    }
+	                    player.xPos += xDelta;
+	                    player.yPos += yDelta;
+	                    player.setLastUpdate(System.currentTimeMillis());
                 	}
-                	
-                    if (player.xPos == 200 && player.yPos == 200) {
-                        xDelta = 0;
-                        yDelta = 1;
-                    }
-                    else if (player.xPos == 200 && player.yPos == 400) {
-                        xDelta = 1;
-                        yDelta = 0;
-                    }
-                    else if (player.xPos == 800 && player.yPos == 400) {
-                        xDelta = 0;
-                        yDelta = -1;
-                    }
-                    else if (player.xPos == 800 && player.yPos == 200) {
-                        xDelta = -1;
-                        yDelta = 0;
-                    }
-                    player.xPos += xDelta;
-                    player.yPos += yDelta;
                     Thread.sleep(BROADCAST_DELAY);
                 }
                 catch (Exception e) {
@@ -244,6 +269,26 @@ public class Main {
                 }
             }
         }    
+    }
+    
+    private static void sendDisconnectedMessage(Player p) {
+    	// TODO
+    }
+    
+    // Simple O(P) isHit
+    private static boolean isHitSimple(Attack a, Set<Player> players) {
+    	for (Player p : players) {
+    		if (a.getOwnerID() != p.getId()) {
+	    		float xDelta = Math.abs(a.getxPos() - p.getxPos());
+	    		float yDelta = Math.abs(a.getyPos() - p.getyPos());
+	    		if (xDelta < 20 && yDelta < 20) {
+	    			// hit
+	    			attackHitPlayer(a, p);
+	    			return true;
+	    		}
+    		}
+    	}
+    	return false;
     }
     
     // are x and y in array bounds
@@ -276,13 +321,7 @@ public class Main {
     			if (inBounds(x, y, grid) && (grid[x][y] != 0)) {
     				int playerHitId = grid[x][y];
     				Player playerHit = playersInGame.get(playerHitId);
-    				Player attackOwner = playersInGame.get(a.getOwnerID());
-    				playerHit.setcurrHP(playerHit.getcurrHP() - a.getAtkDmg());
-    				attackOwner.sethitCount(attackOwner.gethitCount() + 1);
-    				if (playerHit.getcurrHP() <= 0) {
-    					// kill
-    					attackOwner.setkills(attackOwner.getkills() + 1);
-    				}
+    				attackHitPlayer(a, playerHit);
     				return true;
     			}
     		}
@@ -290,6 +329,16 @@ public class Main {
     	return false;
     }
     
+    // handle attack a hitting player p
+    private static void attackHitPlayer(Attack a, Player p) {
+    	Player attackOwner = playersInGame.get(a.getOwnerID());
+		p.setcurrHP(p.getcurrHP() - a.getAtkDmg());
+		attackOwner.sethitCount(attackOwner.gethitCount() + 1);
+		if (p.getcurrHP() <= 0) {
+			// kill
+			attackOwner.setkills(attackOwner.getkills() + 1);
+		}
+    }
     
     private static Player createNewPlayer(String type) {
         Player p = new Player();
@@ -299,6 +348,7 @@ public class Main {
         p.setmaxHP(10);
         p.setcurrHP(10);
         p.setatkDmg(2);
+        p.setLastUpdate(System.currentTimeMillis());
         return p;
     }
     

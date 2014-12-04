@@ -5,6 +5,7 @@ public class Attack extends GameEntity {
     private int ownerID;
     private int atkDmg;
     private String type;
+    private float rotation;
     
     public static final String FIREBALL = "fireball";
     public static final String ARROW = "arrow";
@@ -43,5 +44,13 @@ public class Attack extends GameEntity {
 
 	public void setType(String type) {
 		this.type = type;
+	}
+
+	public float getRotation() {
+		return rotation;
+	}
+
+	public void setRotation(float rotation) {
+		this.rotation = rotation;
 	}
 }

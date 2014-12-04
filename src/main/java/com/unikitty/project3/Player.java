@@ -9,6 +9,8 @@ public class Player extends GameEntity {
   private int kills;
   private int hitCount;
   private String type;
+  private long lastUpdate;
+  
   public static final String WIZARD = "wizard";
   public static final String RANGER = "ranger";
 
@@ -78,4 +80,12 @@ public class Player extends GameEntity {
   public void settype(String type) {
     this.type = type;
   }
+
+public long getLastUpdate() {
+	return lastUpdate;
+}
+
+public void setLastUpdate(long lastUpdate) {
+	this.lastUpdate = lastUpdate;
+}
 }
