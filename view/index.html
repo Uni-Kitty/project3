@@ -224,19 +224,73 @@ $(function() {
     wizard.vx = 0;
     wizard.vy = 0;
     wizard.health = 100;
+    
+    $(document).keydown(function(event) {
+        switch(event.which) {
+        case (upArrow):
+        case (upKey):
+            wizard.vy = 0 - MAX_SPEED;
+            break;
+        case (downArrow):
+        case (downKey):
+            wizard.vy = MAX_SPEED;
+            break;
+        case (leftArrow):
+        case (leftKey):
+            wizard.vx = 0 - MAX_SPEED;
+            break;
+        case (rightArrow):
+        case (rightKey):
+            wizard.vx = MAX_SPEED;
+            break;
+        }
+    });
+    
+    $(document).keyup(function(event) {
+        switch(event.which) {
+        case (upArrow):
+        case (upKey):
+            wizard.vy = Math.max(wizard.vy, 0);
+            break;
+        case (downArrow):
+        case (downKey):
+            wizard.vy = Math.min(wizard.vy, 0);
+            break;
+        case (leftArrow):
+        case (leftKey):
+            wizard.vx = Math.max(wizard.vx, 0);
+            break;
+        case (rightArrow):
+        case (rightKey):
+            wizard.vx = Math.min(wizard.vx, 0);
+            break;
+        }
+    });
+
+    setInterval(function() {
+        wizard.position.x += wizard.vx / 1000;
+        wizard.position.y += wizard.vy / 1000;
+    }, 20);
+});
+
+    </script>
+
+    </body>
+</html>
+
+<!-- OLD CODE:
+
+    var keys = {};
 
     function accelerate(x, y) {
         wizard.vx = Math.max(Math.min(MAX_SPEED, wizard.vx + x), -MAX_SPEED);
         wizard.vy = Math.max(Math.min(MAX_SPEED, wizard.vy + y), -MAX_SPEED);
     }
-
-    var keys = {};
     
     $(document).keydown(function(event) {
         keys[event.which] = true;
         var x = 0;
         var y = 0;
-        console.log(keys);
         for (var key in keys) {
             if (key == upArrow || key == upKey) {
                 y += -6000;
@@ -257,29 +311,6 @@ $(function() {
     $(document).keyup(function(event) {
         delete keys[event.which];
     });
-
-    setInterval(function() {
-        wizard.position.x += wizard.vx / 1000;
-        wizard.position.y += wizard.vy / 1000;
-        wizard.vx *= FRICTION;
-        wizard.vy *= FRICTION;
-    }, 20);
-});
-
-    </script>
-
-    </body>
-</html>
-
-<!-- 
-    
-    $scope.keyDown = function($event) {
-
-    };
-
-    $scope.keyUp = function($event) {
-        
-    };
     
     
      -->
