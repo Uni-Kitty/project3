@@ -1,6 +1,7 @@
 package com.unikitty.project3;
 
 import java.util.Iterator;
+import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -31,6 +32,7 @@ public class Main {
     
     public static final int PORT = 9999;
     public static final int BROADCAST_DELAY = 20; // Game loop delay in ms
+    public static final int PRESENT_DELAY = 10000; // amt of delay between presents appearing in game
     public static final long PLAYER_TIMEOUT = 5000; // Time to wait before dropping player in ms
     public static final String PING = "ping";
     public static final String ATTACK = "attack";
@@ -40,6 +42,7 @@ public class Main {
     public static final int ARENA_WIDTH = 1000;
     public static final int ARENA_HEIGHT = 600;
     public static final int CELL_SIZE = 5;
+    public static final int HIT_DISTANCE = 20;
     
 	private static Game game = new Game(); // the state of the game
 	private static ConcurrentMap<Integer, Player> playersInGame = new ConcurrentHashMap<Integer, Player>();
@@ -54,7 +57,7 @@ public class Main {
 	}
 	
     public static void main( String[] args ) {
-        startGame(); // this will go away eventually, just here to give the front end something to display
+        startGame();
         startBroadcasting();
         startWebSocketServer();
     }
@@ -172,6 +175,7 @@ public class Main {
         game.addPlayer(p1);
         p1.setxPos(200);
         p1.setyPos(200);
+        new Thread(new PresentBuilder()).start();
         new Thread(new GameRunner(p1)).start();
     }
     
@@ -200,8 +204,32 @@ public class Main {
             }
         }
     }
+    private static class PresentBuilder implements Runnable {
+    	private static final String[] POSSIBLE_PRESENTS = {"food", "health"};
+    	private static final Random randy = new Random();
+    	
+    	private PresentBuilder() {
+    		
+    	}
+    	
+    	public void run() {
+    		while(true) {
+    			try {
+    				int presentIndex = randy.nextInt(POSSIBLE_PRESENTS.length);
+    				// generate x and y in the middle of the arena
+    				float x = randy.nextInt(ARENA_WIDTH / 2) + ARENA_WIDTH / 4;
+    				float y = randy.nextInt(ARENA_HEIGHT / 2) + ARENA_HEIGHT / 4;
+    				Present gamePresent = new Present(x, y, POSSIBLE_PRESENTS[presentIndex]);
+    				game.addPresent(gamePresent);
+    				Thread.sleep(PRESENT_DELAY);
+    			} catch (Exception e) {
+                    e.printStackTrace();
+                }
+    		}
+    	}
+    }
     
-    // Temporary thing, makes mock wizard run around in the game giving the ui something to display
+    // updates the state of the game by moving attacks, registering hits, and removing inactive players
     private static class GameRunner implements Runnable {
         
         private Player player;
@@ -221,14 +249,23 @@ public class Main {
                 	// update Attack positions and register any hits
                 	*/
                 	synchronized (game) {
+                		// update attacks
 	                	Iterator<Attack> it = game.getAttacks().iterator();
 	                	while(it.hasNext()) {
 	                		Attack a = it.next();
 	                		a.xPos += a.getxVelocity();
 	                		a.yPos += a.getyVelocity();
-	                		if (!inArena(a) || /* isHit(a, playerGrid) */ isHitSimple(a, game.getPlayers())) {
+	                		if (!inArena(a) || /* isHit(a, playerGrid) */ hitPlayer(a, game.getPlayers())) {
 	                			attacksInGame.remove(a.getId());
 	                			it.remove();
+	                		}
+	                	}
+	                	// update presents
+	                	Iterator<Present> iterPresents = game.getPresents().iterator();
+	                	while(iterPresents.hasNext()) {
+	                		Present pres = iterPresents.next();
+	                		if (playerOnPresent(pres, game.getPlayers())) {
+	                			iterPresents.remove();
 	                		}
 	                	}
 	                	// delete inactive players
@@ -276,19 +313,38 @@ public class Main {
     }
     
     // Simple O(P) isHit
-    private static boolean isHitSimple(Attack a, Set<Player> players) {
+    // returns if it hit a player
+    // updates player status based on hit
+    private static boolean hitPlayer(Attack a, Set<Player> players) {
     	for (Player p : players) {
     		if (a.getOwnerID() != p.getId()) {
 	    		float xDelta = Math.abs(a.getxPos() - p.getxPos());
 	    		float yDelta = Math.abs(a.getyPos() - p.getyPos());
-	    		if (xDelta < 20 && yDelta < 20) {
-	    			// hit
-	    			attackHitPlayer(a, p);
+	    		if (hit(xDelta, yDelta)) {
+	    			registerAttack(a, p);
 	    			return true;
 	    		}
     		}
     	}
     	return false;
+    }
+    
+    // returns if player received present
+    private static boolean playerOnPresent(Present pres, Set<Player> players) {
+    	for (Player play : players) {
+    		float xDelta = Math.abs(pres.getxPos() - play.getxPos());
+    		float yDelta = Math.abs(pres.getyPos() - play.getyPos());
+    		if (hit(xDelta, yDelta)) {
+    			//givePresent(pres, play);
+    			// TODO: send present to player
+    			return true;
+    		}
+    	}
+    	return false;
+    }
+    
+    private static boolean hit(float xDelta, float yDelta) {
+    	return xDelta < HIT_DISTANCE && yDelta < HIT_DISTANCE;
     }
     
     // are x and y in array bounds
@@ -321,7 +377,7 @@ public class Main {
     			if (inBounds(x, y, grid) && (grid[x][y] != 0)) {
     				int playerHitId = grid[x][y];
     				Player playerHit = playersInGame.get(playerHitId);
-    				attackHitPlayer(a, playerHit);
+    				registerAttack(a, playerHit);
     				return true;
     			}
     		}
@@ -330,12 +386,14 @@ public class Main {
     }
     
     // handle attack a hitting player p
-    private static void attackHitPlayer(Attack a, Player p) {
+    private static void registerAttack(Attack a, Player p) {
     	Player attackOwner = playersInGame.get(a.getOwnerID());
 		p.setcurrHP(p.getcurrHP() - a.getAtkDmg());
 		attackOwner.sethitCount(attackOwner.gethitCount() + 1);
 		if (p.getcurrHP() <= 0) {
-			// kill
+			playersInGame.remove(p.getId());
+			game.removePlayer(p);
+			sendDisconnectedMessage(p);
 			attackOwner.setkills(attackOwner.getkills() + 1);
 		}
     }

@@ -81,11 +81,11 @@ public class Player extends GameEntity {
     this.type = type;
   }
 
-public long getLastUpdate() {
-	return lastUpdate;
-}
-
-public void setLastUpdate(long lastUpdate) {
-	this.lastUpdate = lastUpdate;
-}
+	public long getLastUpdate() {
+		return lastUpdate;
+	}
+	
+	public void setLastUpdate(long lastUpdate) {
+		this.lastUpdate = lastUpdate;
+	}
 }

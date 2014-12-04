@@ -5,16 +5,11 @@ import java.util.HashSet;
 import java.util.Set;
 
 public class Game {
-    
-	private Set<Player> players = Collections.synchronizedSet(new HashSet<Player>());
-	private Set<Attack> attacks = Collections.synchronizedSet(new HashSet<Attack>()); 
+	private Set<Player>  players  = Collections.synchronizedSet(new HashSet<Player>());
+	private Set<Attack>  attacks  = Collections.synchronizedSet(new HashSet<Attack>()); 
+	private Set<Present> presents = Collections.synchronizedSet(new HashSet<Present>());
 	
 	public Game() {}
-
-	public void updatePlayer(Player oldInfo, Player newInfo) {
-		players.remove(oldInfo);
-		players.add(newInfo);
-	}
 	
 	public void addAttack(Attack a) {
 		attacks.add(a);
@@ -46,6 +41,22 @@ public class Game {
 
 	public void setAttacks(Set<Attack> attacks) {
 		this.attacks = attacks;
+	}
+
+	public Set<Present> getPresents() {
+		return presents;
+	}
+
+	public void setPresents(Set<Present> presents) {
+		this.presents = presents;
+	}
+	
+	public void addPresent(Present p) {
+		presents.add(p);
+	}
+	
+	public void removePresent(Present p) {
+		presents.remove(p);
 	}
 	
 }
