@@ -336,7 +336,7 @@ public class Main {
     		float yDelta = Math.abs(pres.getyPos() - play.getyPos());
     		if (hit(xDelta, yDelta)) {
     			//givePresent(pres, play);
-    			// TODO: send present to player
+    			// TODO: send present to player and decide on system for how much to increase stats by
     			return true;
     		}
     	}
@@ -347,42 +347,10 @@ public class Main {
     	return xDelta < HIT_DISTANCE && yDelta < HIT_DISTANCE;
     }
     
-    // are x and y in array bounds
-    private static boolean inBounds(int x, int y, int[][] grid) {
-    	return x >= 0 && x < grid.length && y >= 0 && y < grid[0].length;
-    }
-    
     private static boolean inArena(Attack a) {
     	float x = a.getxPos();
     	float y = a.getyPos();
     	return x > 0 && x < ARENA_WIDTH && y > 0 && y < ARENA_HEIGHT;
-    }
-    
-    private static void assignPlayersToGrid(int[][] grid, Set<Player> players) {
-    	for (Player p: players) {
-    		int row = Math.min(grid.length - 1, ((int) p.getxPos()) / CELL_SIZE);
-     		int col = Math.min(grid[0].length - 1, ((int) p.getyPos()) / CELL_SIZE);
-     		grid[row][col] = p.getId();
-    	}
-    }
-    
-    // checks each surrounding cell of 
-    private static boolean isHit(Attack a, int[][] grid) {
-    	int row = ((int) a.getxPos()) / CELL_SIZE;
- 		int col = ((int) a.getyPos()) / CELL_SIZE;
-    	for (int i = -1; i <= 1; i++) {
-    		for (int j = -1; j <= 1; j++) {
-    			int x = row + i;
-    			int y = col + j;
-    			if (inBounds(x, y, grid) && (grid[x][y] != 0)) {
-    				int playerHitId = grid[x][y];
-    				Player playerHit = playersInGame.get(playerHitId);
-    				registerAttack(a, playerHit);
-    				return true;
-    			}
-    		}
-    	}
-    	return false;
     }
     
     // handle attack a hitting player p
