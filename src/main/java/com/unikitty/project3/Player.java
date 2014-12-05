@@ -9,6 +9,7 @@ public class Player extends GameEntity {
   private int kills;
   private int hitCount;
   private String type;
+  private String username;
   private long lastUpdate;
   private long rtt;
   
@@ -24,6 +25,27 @@ public class Player extends GameEntity {
 		id = identifier;
 		xVelocity = xVel;
 		yVelocity = yVel;
+	}
+	
+	public Player(String name, String type, int id) {
+	    this.id = id;
+	    this.username = name;
+	    this.type = type;
+	    switch (type) {
+	    case (WIZARD):
+	        maxHP = 10;
+	        currHP = 10;
+	        atkDmg = 5;
+	        ammo = 20;
+	        break;
+	    case (RANGER):
+	        maxHP = 15;
+	        currHP = 15;
+	        atkDmg = 3;
+	        ammo = 30;
+	        break;
+	    }
+	    lastUpdate = System.currentTimeMillis();
 	}
 
   public int getmaxHP() {
@@ -121,4 +143,12 @@ public class Player extends GameEntity {
 	public void setRtt(long rtt) {
 		this.rtt = rtt;
 	}
+
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
+    }
 }
