@@ -8,9 +8,11 @@ $(function() {
 	var WELCOME = "welcome";
 	var PLAYER_UPDATE = "player_update";
 	var ATTACK = "attack";
-  var wizardTexture = PIXI.Texture.fromImage("img/wizard-sm.png");
-  var rangerTexture = PIXI.Texture.fromImage("img/ranger-sm.png");
-  var fireballTexture = PIXI.Texture.fromImage("img/fireball-sm.png");
+	var JOIN_GAME = "join_game";
+	var PLAYER_JOINED = "player_joined";
+    var wizardTexture = PIXI.Texture.fromImage("img/wizard-sm.png");
+    var rangerTexture = PIXI.Texture.fromImage("img/ranger-sm.png");
+    var fireballTexture = PIXI.Texture.fromImage("img/fireball-sm.png");
     var userid = 0;
     var MAX_SPEED = 6;
     var FRICTION = 0.97;
@@ -26,8 +28,8 @@ $(function() {
     var STAGE_HEIGHT = 600;
     var game = {};
     var keys = {};
-    var player;
-    var keys = {};
+    var type = WIZARD;
+    var name = "";
     game.players = {}; // map id->player
     game.attacks = {}; // map id->attack
     
@@ -46,12 +48,27 @@ $(function() {
     document.getElementById("stageBox").appendChild(renderer.view);
     requestAnimFrame( animate );
     
-    player = addElementToStage(RANGER, STAGE_WIDTH / 2, STAGE_HEIGHT / 2, 0);
+    var player = {};
+    player.spectating = true;
+    
+    // addElementToStage(RANGER, STAGE_WIDTH / 2, STAGE_HEIGHT / 2, 0);
     
     function animate() {
         requestAnimFrame( animate );
         renderer.render(stage);
     }
+    
+    function depthCompare(a,b) {
+      if (a.z == null)
+    	  a.z = 1;
+      if (b.z == null)
+    	  b.z = 1;
+	  if (a.z < b.z)
+	     return -1;
+	  if (a.z > b.z)
+	    return 1;
+	  return 0;
+	}
     
     // Creates and adds element to stage, returns reference to the element
     function addElementToStage(image, x, y, rotation) {
@@ -81,10 +98,46 @@ $(function() {
     var serverAddress = "ws://54.69.151.4:9999/";
     if (document.location.hostname == "localhost")
     	serverAddress = "ws://127.0.0.1:9999/";
+    
     var ws = new WebSocket(serverAddress);
+    
+    function startGame(name, type) {
+    	$('#charSelector').remove();
+    	var msg = {};
+    	msg.type = JOIN_GAME;
+    	msg.id = userid;
+    	msg.data = {};
+    	msg.data.type = type;
+    	msg.data.id = userid;
+    	msg.data.username = name;
+    	ws.send(JSON.stringify(msg));
+    }
+    
+    function joinGameSequence() {
+        $('body').append('<div id="charSelector"></div>');
+        $("#charSelector").append("<p>CHOOSE YOUR NAME</p>");
+        $("#charSelector").append("<input type='text' id='nameBox'></input>");
+        $("#charSelector").append("<button id='okGoButton'>OK</Button>");
+        $("#okGoButton").click(function() {
+        	var name = $("#nameBox").val();
+        	if (name != "") {
+                $("#charSelector").empty();
+                $("#charSelector").append("<p>SELECT YOUR HERO</p>");
+                $("#charSelector").append("<img src='img/wizard-lg.png' id='wizardButton' />");
+                $("#charSelector").append("<img src='img/ranger-lg.png' id='rangerButton' />");
+                $("#wizardButton").click(function() {
+                	startGame(name, WIZARD);
+                })
+                $("#rangerButton").click(function() {
+                	startGame(name, RANGER);
+                })
+        	}
+        });
+    }
     
     ws.onopen = function() {
         console.log("socket opened");
+        joinGameSequence();
     };
     
     var i = 0;
@@ -96,9 +149,11 @@ $(function() {
     	    userid = message.id;
     	    break;
     	case (PING):
-            var ping = new Date().getTime() - message.data;
-            pingNum.text(ping);
+            ws.send(message);
             break;
+    	case (PLAYER_JOINED):
+    		
+    		break;
     	case (UPDATE):
     		i++;
     		if (i % 100 == 1)
@@ -176,23 +231,25 @@ $(function() {
     
     // send an attack
     stage.click = function(data) {
-        var attack = {};
-        attack.xPos = player.position.x;
-        attack.yPos = player.position.y;
-        var totalVelocity = 15; // TODO: get this from player or from attack type or whatever
-        var xClick = data.global.x;
-        var yClick = data.global.y;
-        var xDelta = xClick - attack.xPos;
-        var yDelta = yClick - attack.yPos;
-        var d = Math.sqrt((xDelta * xDelta) + (yDelta * yDelta));
-        var factor = 10 / d;
-        attack.xVelocity = xDelta * factor;
-        attack.yVelocity = yDelta * factor;
-        attack.ownerID = userid;
-        attack.type = FIREBALL;
-        attack.rotation = Math.atan2(xDelta, yDelta) * -1 + Math.PI / 2;
-        var message = {type:ATTACK,id:userid,data:attack};
-        ws.send(JSON.stringify(message));
+    	if (!player.spectating) {
+	        var attack = {};
+	        attack.xPos = player.position.x;
+	        attack.yPos = player.position.y;
+	        var totalVelocity = 15; // TODO: get this from player or from attack type or whatever
+	        var xClick = data.global.x;
+	        var yClick = data.global.y;
+	        var xDelta = xClick - attack.xPos;
+	        var yDelta = yClick - attack.yPos;
+	        var d = Math.sqrt((xDelta * xDelta) + (yDelta * yDelta));
+	        var factor = 10 / d;
+	        attack.xVelocity = xDelta * factor;
+	        attack.yVelocity = yDelta * factor;
+	        attack.ownerID = userid;
+	        attack.type = FIREBALL;
+	        attack.rotation = Math.atan2(xDelta, yDelta) * -1 + Math.PI / 2;
+	        var message = {type:ATTACK,id:userid,data:attack};
+	        ws.send(JSON.stringify(message));
+    	}
     }
     
     // send ping requests
@@ -208,7 +265,7 @@ $(function() {
 
     // send player update
     setInterval(function() {
-        if (userid != 0) { // has the welcome message arrived?
+        if (!player.spectating) { // has the welcome message arrived?
             var playerInfo = {};
             playerInfo.xPos = player.position.x;
             playerInfo.yPos = player.position.y;
@@ -264,25 +321,27 @@ $(function() {
     });
 
     setInterval(function() {
-    	player.vx = 0;
-    	player.vy = 0;
-    	if (keys.right)
-        if (player.position.x < STAGE_WIDTH - 20)
-    		  player.vx += MAX_SPEED;
-    	if (keys.left)
-        if (player.position.x > 20)
-          player.vx -= MAX_SPEED;
-    	if (keys.up)
-        if (player.position.y > 20)
-    		  player.vy -= MAX_SPEED;
-    	if (keys.down)
-        if (player.position.y < STAGE_HEIGHT - 20)
-    		  player.vy += MAX_SPEED;
-    	if (player.vx > 0)
-    		player.scale.x = -1;
-    	else if (player.vx < 0)
-    		player.scale.x = 1;
-    	player.position.x += player.vx;
-    	player.position.y += player.vy;
+    	if (!player.spectating) {
+	    	player.vx = 0;
+	    	player.vy = 0;
+	    	if (keys.right)
+	        if (player.position.x < STAGE_WIDTH - 20)
+	    		  player.vx += MAX_SPEED;
+	    	if (keys.left)
+	        if (player.position.x > 20)
+	          player.vx -= MAX_SPEED;
+	    	if (keys.up)
+	        if (player.position.y > 20)
+	    		  player.vy -= MAX_SPEED;
+	    	if (keys.down)
+	        if (player.position.y < STAGE_HEIGHT - 20)
+	    		  player.vy += MAX_SPEED;
+	    	if (player.vx > 0)
+	    		player.scale.x = -1;
+	    	else if (player.vx < 0)
+	    		player.scale.x = 1;
+	    	player.position.x += player.vx;
+	    	player.position.y += player.vy;
+    	}
     }, 20);
 });
