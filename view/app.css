@@ -5,6 +5,7 @@ body {
     text-align: center;
     font-family: "Courier New", monospace;
     color: white;
+    width: 100%;
 }
 
 h1 {
@@ -14,7 +15,36 @@ h1 {
 
 #pingBox {
     position: fixed;
-    top: 25px;
+    top: 15px;
     right: 25px;
     color: #00FF26;
+}
+
+#stageBox {
+	display: inline-block;
+}
+
+#jumbotron, #statBox {
+	display: inline-block;
+    height: 600px;
+    color: #00FF26;
+}
+
+#statBox {
+	
+}
+
+#jumbotron {
+	width: 15em;
+    border: 1px solid #00FF26;
+}
+
+#statBox p, #jumbotron p {
+	float: left;
+	clear: both;
+	margin: 2px;
+}
+
+#content {
+	display:inline;
 }

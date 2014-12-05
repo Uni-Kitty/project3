@@ -19,7 +19,7 @@ $(function() {
     var downKey = 83;
     var rightKey = 68;
     var leftKey = 65;
-    var STAGE_WIDTH = 1000;
+    var STAGE_WIDTH = 800;
     var STAGE_HEIGHT = 600;
     var game = {};
     var keys = {};
@@ -28,10 +28,19 @@ $(function() {
     game.players = {}; // map id->player
     game.attacks = {}; // map id->attack
     
+    // text areas
+    var pingNum = $("#pingNum");
+    var classBox = $("#class");
+    var currHP = $("#currHP");
+    var maxHP = $("#maxHP");
+    var atkDmg = $("#atkDmg");
+    var ammo = $("#ammo");
+    
     var stage = new PIXI.Stage(0xFFFFFF);
     stage.interactive = true;
     var renderer = new PIXI.autoDetectRenderer(STAGE_WIDTH, STAGE_HEIGHT);
-    document.body.appendChild(renderer.view);
+    // document.body.appendChild(renderer.view);
+    document.getElementById("stageBox").appendChild(renderer.view);
     requestAnimFrame( animate );
     
     player = addElementToStage(RANGER, STAGE_WIDTH / 2, STAGE_HEIGHT / 2, 0);
@@ -66,8 +75,10 @@ $(function() {
 		return sprite;
     }
     
-    var ws = new WebSocket("ws://127.0.0.1:9999/");
-    //var ws = new WebSocket("ws://54.69.151.4:9999/");
+    var serverAddress = "ws://54.69.151.4:9999/";
+    if (document.location.hostname == "localhost")
+    	serverAddress = "ws://127.0.0.1:9999/";
+    var ws = new WebSocket(serverAddress);
     
     ws.onopen = function() {
         console.log("socket opened");
@@ -83,7 +94,7 @@ $(function() {
     	    break;
     	case (PING):
             var ping = new Date().getTime() - message.data;
-            $("#pingNum").text(ping);
+            pingNum.text(ping);
             break;
     	case (UPDATE):
     		i++;
@@ -102,18 +113,29 @@ $(function() {
             	var id = player.id;
             	if (id == userid) {
             		// update my own stats here
+            		currHP.text(player.currHP);
+            		maxHP.text(player.maxHP);
+            		ammo.text(player.ammo);
+            		atkDmg.text(player.atkDmg);
+            		classBox.text(player.type);
+            		if (i == 20)
+            			console.log(player);
             	}
             	else if (game.players[id] == null) {
             		game.players[id] = addElementToStage(player.type, player.xPos, player.yPos, 0);
             	}
             	else {
+            		if (game.players[id].position.x > player.xPos)
+            			game.players[id].scale.x = 1;
+            		else if (game.players[id].position.x < player.xPos)
+            			game.players[id].scale.x = -1;
             		game.players[id].position.x = player.xPos;
             		game.players[id].position.y = player.yPos;
             		playerIDs.pop(id);
             	}
             });
     	    data.attacks.forEach(function(attack) {
-    	    	console.log(attack);
+    	    	//console.log(attack);
     	    	var id = attack.id;
     	    	if (game.attacks[id] == null) {
     	    		game.attacks[id] = addElementToStage(attack.type, attack.xPos, attack.yPos, attack.rotation);
@@ -166,7 +188,6 @@ $(function() {
         attack.ownerID = userid;
         attack.type = FIREBALL;
         attack.rotation = Math.atan2(xDelta, yDelta) * -1 + Math.PI / 2;
-        //attack.rotation *= -1;
         var message = {type:ATTACK,id:userid,data:attack};
         ws.send(JSON.stringify(message));
     }
@@ -250,6 +271,10 @@ $(function() {
     		player.vy -= MAX_SPEED;
     	if (keys.down)
     		player.vy += MAX_SPEED;
+    	if (player.vx > 0)
+    		player.scale.x = -1;
+    	else if (player.vx < 0)
+    		player.scale.x = 1;
     	player.position.x += player.vx / 1000;
     	player.position.y += player.vy / 1000;
     }, 20);
