@@ -3,19 +3,18 @@ package com.unikitty.project3;
 import java.util.Random;
 
 public class PresentBuilder implements Runnable {
-	private static final String[] POSSIBLE_PRESENTS = {"food", "health"};
+	private static final String[] POSSIBLE_PRESENTS = {"ammo", "health"};
 	private static final Random randy = new Random();
 	
 	private Game game;
 	private int arenaWidth;
 	private int arenaHeight;
-	private int presentDelay;
+	private static final int PRESENT_DELAY = 5000;
 	
-	public PresentBuilder(Game g, int width, int height, int delay) {
+	public PresentBuilder(Game g, int width, int height) {
 		game = g;
 		arenaWidth = width;
 		arenaHeight = height;
-		presentDelay = delay;
 	}
 	
 	public void run() {
@@ -25,9 +24,12 @@ public class PresentBuilder implements Runnable {
 				// generate x and y in the middle of the arena
 				float x = randy.nextInt(arenaWidth / 2) + arenaWidth / 4;
 				float y = randy.nextInt(arenaHeight / 2) + arenaHeight / 4;
-				Present gamePresent = new Present(x, y, POSSIBLE_PRESENTS[presentIndex]);
+				int imageNum = randy.nextInt(4);
+				Present gamePresent = new Present(x, y, POSSIBLE_PRESENTS[presentIndex],
+									System.currentTimeMillis(), imageNum);
 				game.addPresent(gamePresent);
-				Thread.sleep(presentDelay);
+				long delay = randy.nextInt(PRESENT_DELAY) + 5000;
+				Thread.sleep(delay);
 			} catch (Exception e) {
                 e.printStackTrace();
             }
