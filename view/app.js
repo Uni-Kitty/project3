@@ -273,21 +273,25 @@ $(function() {
         }
     });
 
+    function checkWallCollision(x, y) {
+        var collision;
+        for (var i = 100; i > -50; i -= 20) {
+            collision = collision || (x > (STAGE_WIDTH / 4) - 10 + (i - 25) && x <= (STAGE_WIDTH / 4) - 10 + i) && (y > (STAGE_HEIGHT / 4) + 10 - (i - 20) && y <= (STAGE_HEIGHT / 4) + 10 - (i - 45))
+        }
+        return collision;
+    }
+
     setInterval(function() {
     	  player.vx = 0;
     	  player.vy = 0;
-    	  if (keys.right)
-            if (player.position.x < STAGE_WIDTH - 20)
-    		        player.vx += MAX_SPEED;
-    	  if (keys.left)
-            if (player.position.x > 20)
-                player.vx -= MAX_SPEED;
-    	  if (keys.up)
-            if (player.position.y > 20)
-    		        player.vy -= MAX_SPEED;
-    	  if (keys.down)
-            if (player.position.y < STAGE_HEIGHT - 20)
-    		        player.vy += MAX_SPEED;
+        if (keys.right && player.position.x < STAGE_WIDTH - 20)
+            player.vx += MAX_SPEED;
+        if (keys.left && player.position.x > 20 && !checkWallCollision(player.position.x, player.position.y))
+            player.vx -= MAX_SPEED;
+    	  if (keys.up && player.position.y > 20 && !checkWallCollision(player.position.x, player.position.y))
+    		    player.vy -= MAX_SPEED;
+    	  if (keys.down && player.position.y < STAGE_HEIGHT - 20)
+    		    player.vy += MAX_SPEED;
     	  if (player.vx > 0)
     		    player.scale.x = -1;
     	  else if (player.vx < 0)
