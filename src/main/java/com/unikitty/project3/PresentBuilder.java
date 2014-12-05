@@ -24,7 +24,9 @@ public class PresentBuilder implements Runnable {
 				// generate x and y in the middle of the arena
 				float x = randy.nextInt(arenaWidth / 2) + arenaWidth / 4;
 				float y = randy.nextInt(arenaHeight / 2) + arenaHeight / 4;
-				Present gamePresent = new Present(x, y, POSSIBLE_PRESENTS[presentIndex], System.currentTimeMillis());
+				int imageNum = randy.nextInt(4);
+				Present gamePresent = new Present(x, y, POSSIBLE_PRESENTS[presentIndex],
+									System.currentTimeMillis(), imageNum);
 				game.addPresent(gamePresent);
 				long delay = randy.nextInt(PRESENT_DELAY) + 5000;
 				Thread.sleep(delay);
