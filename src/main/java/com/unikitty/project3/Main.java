@@ -39,7 +39,7 @@ public class Main {
     public static final String UPDATE = "update";
     public static final String WELCOME = "welcome";
     public static final String PLAYER_UPDATE = "player_update";
-    public static final int ARENA_WIDTH = 1000;
+    public static final int ARENA_WIDTH = 800;
     public static final int ARENA_HEIGHT = 600;
     public static final int CELL_SIZE = 5;
     public static final int HIT_DISTANCE = 20;
@@ -167,7 +167,7 @@ public class Main {
     }
     
     private static void startBroadcasting() {
-        new Thread(new GameBroadcaster()).start();
+        new Thread(new GameBroadcaster(game, playerSessions.values(), BROADCAST_DELAY, UPDATE, mapper)).start();
     }
     
     private static void startGame() {
@@ -175,195 +175,8 @@ public class Main {
         game.addPlayer(p1);
         p1.setxPos(200);
         p1.setyPos(200);
-        new Thread(new PresentBuilder()).start();
-        new Thread(new GameRunner(p1)).start();
-    }
-    
-    // This thing broadcasts to all active sessions
-    private static class GameBroadcaster implements Runnable {
-        public void run() {
-            while (true) {
-                try {
-                	String message = "";
-                	synchronized (game) {
-	                    Message<Game> m = new Message<Game>();
-	                    m.setType(UPDATE);
-	                    m.setData(game);
-	                    message = mapper.writeValueAsString(m);
-                	}
-                    for (Session session : playerSessions.values()) {
-                        if (session.isOpen()) { // TODO: handle this better, do we disconnect player if session goes bad?
-                            session.getRemote().sendStringByFuture(message);
-                        }
-                    }
-                    Thread.sleep(BROADCAST_DELAY);
-                }
-                catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-    }
-    private static class PresentBuilder implements Runnable {
-    	private static final String[] POSSIBLE_PRESENTS = {"food", "health"};
-    	private static final Random randy = new Random();
-    	
-    	private PresentBuilder() {
-    		
-    	}
-    	
-    	public void run() {
-    		while(true) {
-    			try {
-    				int presentIndex = randy.nextInt(POSSIBLE_PRESENTS.length);
-    				// generate x and y in the middle of the arena
-    				float x = randy.nextInt(ARENA_WIDTH / 2) + ARENA_WIDTH / 4;
-    				float y = randy.nextInt(ARENA_HEIGHT / 2) + ARENA_HEIGHT / 4;
-    				Present gamePresent = new Present(x, y, POSSIBLE_PRESENTS[presentIndex]);
-    				game.addPresent(gamePresent);
-    				Thread.sleep(PRESENT_DELAY);
-    			} catch (Exception e) {
-                    e.printStackTrace();
-                }
-    		}
-    	}
-    }
-    
-    // updates the state of the game by moving attacks, registering hits, and removing inactive players
-    private static class GameRunner implements Runnable {
-        
-        private Player player;
-        
-        private GameRunner(Player p) {
-            this.player = p;
-        }
-        
-        public void run() {
-            int xDelta = 0;
-            int yDelta = 1;
-            while (true) {
-                try {
-                	/*
-                	int[][] playerGrid = new int[ARENA_HEIGHT / CELL_SIZE][ARENA_WIDTH / CELL_SIZE];
-                	assignPlayersToGrid(playerGrid, game.getPlayers());
-                	// update Attack positions and register any hits
-                	*/
-                	synchronized (game) {
-                		// update attacks
-	                	Iterator<Attack> it = game.getAttacks().iterator();
-	                	while(it.hasNext()) {
-	                		Attack a = it.next();
-	                		a.xPos += a.getxVelocity();
-	                		a.yPos += a.getyVelocity();
-	                		if (!inArena(a) || /* isHit(a, playerGrid) */ hitPlayer(a, game.getPlayers())) {
-	                			attacksInGame.remove(a.getId());
-	                			it.remove();
-	                		}
-	                	}
-	                	// update presents
-	                	Iterator<Present> iterPresents = game.getPresents().iterator();
-	                	while(iterPresents.hasNext()) {
-	                		Present pres = iterPresents.next();
-	                		if (playerOnPresent(pres, game.getPlayers())) {
-	                			iterPresents.remove();
-	                		}
-	                	}
-	                	// delete inactive players
-	                	long currentTime = System.currentTimeMillis();
-	                	Iterator<Player> iter = game.getPlayers().iterator();
-	                	while (iter.hasNext()) {
-	                		Player p = iter.next();
-	                		if (currentTime - p.getLastUpdate() > PLAYER_TIMEOUT) {
-	                			iter.remove();
-	                			playersInGame.remove(p.getId());
-	                			sendDisconnectedMessage(p);
-	                		}
-	                	}
-	                    if (player.xPos == 200 && player.yPos == 200) {
-	                        xDelta = 0;
-	                        yDelta = 1;
-	                    }
-	                    else if (player.xPos == 200 && player.yPos == 400) {
-	                        xDelta = 1;
-	                        yDelta = 0;
-	                    }
-	                    else if (player.xPos == 800 && player.yPos == 400) {
-	                        xDelta = 0;
-	                        yDelta = -1;
-	                    }
-	                    else if (player.xPos == 800 && player.yPos == 200) {
-	                        xDelta = -1;
-	                        yDelta = 0;
-	                    }
-	                    player.xPos += xDelta;
-	                    player.yPos += yDelta;
-	                    player.setLastUpdate(System.currentTimeMillis());
-                	}
-                    Thread.sleep(BROADCAST_DELAY);
-                }
-                catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
-        }    
-    }
-    
-    private static void sendDisconnectedMessage(Player p) {
-    	// TODO
-    }
-    
-    // Simple O(P) isHit
-    // returns if it hit a player
-    // updates player status based on hit
-    private static boolean hitPlayer(Attack a, Set<Player> players) {
-    	for (Player p : players) {
-    		if (a.getOwnerID() != p.getId()) {
-	    		float xDelta = Math.abs(a.getxPos() - p.getxPos());
-	    		float yDelta = Math.abs(a.getyPos() - p.getyPos());
-	    		if (hit(xDelta, yDelta)) {
-	    			registerAttack(a, p);
-	    			return true;
-	    		}
-    		}
-    	}
-    	return false;
-    }
-    
-    // returns if player received present
-    private static boolean playerOnPresent(Present pres, Set<Player> players) {
-    	for (Player play : players) {
-    		float xDelta = Math.abs(pres.getxPos() - play.getxPos());
-    		float yDelta = Math.abs(pres.getyPos() - play.getyPos());
-    		if (hit(xDelta, yDelta)) {
-    			//givePresent(pres, play);
-    			// TODO: send present to player and decide on system for how much to increase stats by
-    			return true;
-    		}
-    	}
-    	return false;
-    }
-    
-    private static boolean hit(float xDelta, float yDelta) {
-    	return xDelta < HIT_DISTANCE && yDelta < HIT_DISTANCE;
-    }
-    
-    private static boolean inArena(Attack a) {
-    	float x = a.getxPos();
-    	float y = a.getyPos();
-    	return x > 0 && x < ARENA_WIDTH && y > 0 && y < ARENA_HEIGHT;
-    }
-    
-    // handle attack a hitting player p
-    private static void registerAttack(Attack a, Player p) {
-    	Player attackOwner = playersInGame.get(a.getOwnerID());
-		p.setcurrHP(p.getcurrHP() - a.getAtkDmg());
-		attackOwner.sethitCount(attackOwner.gethitCount() + 1);
-		if (p.getcurrHP() <= 0) {
-			playersInGame.remove(p.getId());
-			game.removePlayer(p);
-			sendDisconnectedMessage(p);
-			attackOwner.setkills(attackOwner.getkills() + 1);
-		}
+        new Thread(new PresentBuilder(game, ARENA_WIDTH, ARENA_HEIGHT, PRESENT_DELAY)).start();
+        new Thread(new GameRunner(p1, game, attacksInGame, playersInGame, PLAYER_TIMEOUT, BROADCAST_DELAY, ARENA_WIDTH, ARENA_HEIGHT, HIT_DISTANCE)).start();
     }
     
     private static Player createNewPlayer(String type) {
