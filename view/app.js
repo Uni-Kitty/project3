@@ -120,7 +120,7 @@ $(function() {
             		classBox.text(player.type);
             		if (i == 20)
             			console.log(player);
-            	}
+            	}asd
             	else if (game.players[id] == null) {
             		game.players[id] = addElementToStage(player.type, player.xPos, player.yPos, 0);
             	}
