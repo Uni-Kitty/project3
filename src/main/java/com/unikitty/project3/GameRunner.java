@@ -18,6 +18,7 @@ public class GameRunner implements Runnable {
 	private static int hitDistance;
 	
 	private static final long PRES_TIMEOUT = 30000;
+	private static final float WALL_COL_DIST = 10;
     
     
     public GameRunner(Player p, Game g, ConcurrentMap<Integer, Attack> attacks, 
@@ -50,7 +51,7 @@ public class GameRunner implements Runnable {
                 		Attack a = it.next();
                 		a.xPos += a.getxVelocity();
                 		a.yPos += a.getyVelocity();
-                		if (!inArena(a) || /* isHit(a, playerGrid) */ hitPlayer(a, game.getPlayers())) {
+                		if (!inArena(a) || hitWall(a) || hitPlayer(a, game.getPlayers())) {
                 			attacksInGame.remove(a.getId());
                 			it.remove();
                 		}
@@ -102,6 +103,44 @@ public class GameRunner implements Runnable {
         }
     }
     
+    private boolean hitWall(Attack a) {
+    	return checkLineNE(190, 160, a) || checkLineNE(610, 440, a) || checkLineNW(610, 160, a) || checkLineNW(190, 440, a);
+    }
+    
+    private boolean checkLineNE(int x, int y, Attack a) {
+    	float x1 = (float) (x - 4 * 14.142);
+    	float y1 = (float) (y - 4 * 14.142);
+    	for(int i = 0; i < 9; i++) {
+    		float xDelta = Math.abs(a.getxPos() - x1);
+    		float yDelta = Math.abs(a.getyPos() - y1);
+    		if (isWallCollision(xDelta, yDelta)) {
+    			return true;
+    		}
+    		x1 += 14.142;
+    		y1 += 14.142;
+    	}
+    	return false;
+    }
+    
+    private boolean checkLineNW(int x, int y, Attack a) {
+    	float x1 = (float) (x + 4 * 14.142);
+    	float y1 = (float) (y - 4 * 14.142);
+    	for(int i = 0; i < 9; i++) {
+    		float xDelta = Math.abs(a.getxPos() - x1);
+    		float yDelta = Math.abs(a.getyPos() - y1);
+    		if (isWallCollision(xDelta, yDelta)) {
+    			return true;
+    		}
+    		x1 -= 14.142;
+    		y1 += 14.142;
+    	}
+    	return false;
+    }
+    
+    private boolean isWallCollision(float xDelta, float yDelta) {
+    	return xDelta < WALL_COL_DIST && yDelta < WALL_COL_DIST;
+    } 
+    
     private static void sendDisconnectedMessage(Player p) {
     	// TODO
     }
@@ -151,7 +190,7 @@ public class GameRunner implements Runnable {
 
     private boolean hit(float xDelta, float yDelta) {
     	return xDelta < hitDistance && yDelta < hitDistance;
-    }
+    } 
 
     private boolean inArena(Attack a) {
     	float x = a.getxPos();

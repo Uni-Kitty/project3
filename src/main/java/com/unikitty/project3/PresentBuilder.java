@@ -27,6 +27,7 @@ public class PresentBuilder implements Runnable {
 				int imageNum = randy.nextInt(4);
 				Present gamePresent = new Present(x, y, POSSIBLE_PRESENTS[presentIndex],
 									System.currentTimeMillis(), imageNum);
+				gamePresent.setId(Main.getNextId());
 				game.addPresent(gamePresent);
 				long delay = randy.nextInt(PRESENT_DELAY) + 5000;
 				Thread.sleep(delay);

@@ -1,8 +1,6 @@
 package com.unikitty.project3;
 
-import java.util.Iterator;
-import java.util.Random;
-import java.util.Set;
+import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -37,16 +35,20 @@ public class Main {
     public static final String ATTACK = "attack";
     public static final String UPDATE = "update";
     public static final String WELCOME = "welcome";
+    public static final String JOIN_GAME = "join_game";
     public static final String PLAYER_UPDATE = "player_update";
+    public static final String PLAYER_JOINED = "player_joined";
     public static final int ARENA_WIDTH = 800;
     public static final int ARENA_HEIGHT = 600;
     public static final int CELL_SIZE = 5;
     public static final int HIT_DISTANCE = 20;
+    public static final int PING_BUFFER_SIZE = 5;
     
 	private static Game game = new Game(); // the state of the game
 	private static ConcurrentMap<Integer, Player> playersInGame = new ConcurrentHashMap<Integer, Player>();
 	private static ConcurrentMap<Integer, Attack> attacksInGame = new ConcurrentHashMap<Integer, Attack>();
 	private static ConcurrentMap<Integer, Session> playerSessions = new ConcurrentHashMap<Integer, Session>();
+	private static ConcurrentMap<Integer, Queue<Long>> playerPings = new ConcurrentHashMap<Integer, Queue<Long>>();
 	private static ObjectMapper mapper = new ObjectMapper(); // mapper for obj<-->JSON
 	private static AtomicInteger id = new AtomicInteger(1); // avoid race conditions, use atomic int for ids
 	
@@ -79,19 +81,39 @@ public class Main {
         	// send welcome message
         	// send ping
         	// start broadcasting gamegit 
-            Player newPlayer = createNewPlayer(Player.WIZARD);
-            game.addPlayer(newPlayer);
-            playersInGame.put(newPlayer.getId(), newPlayer);
-            playerSessions.put(newPlayer.getId(), session);
+        	
+        	// create temp player for the new connection ID
+        	int id = getNextId();
+        	
+            // send welcome message
             Message<Object> m = new Message<Object>();
-            m.setId(newPlayer.getId());
+            m.setId(id);
             m.setType(WELCOME);
             try {
                 session.getRemote().sendStringByFuture(mapper.writeValueAsString(m));
             } catch (Exception e) {
                 e.printStackTrace();
             }
+            
+            // add session to active sessions so player gets game broadcasts
+            playerSessions.put(id, session);
+            playerPings.put(id, new FixedSizeQueue<Long>(PING_BUFFER_SIZE));
+            // send first ping
+            // ping(session);
+            // TODO: work on pinging system
+            
             System.out.println("Connect: " + session.getRemoteAddress().getAddress());
+        }
+        
+        public void ping(Session session) {
+        	Message<Object> m = new Message<Object>();
+        	m.setType(PING);
+            m.setData(new Long(System.currentTimeMillis()));
+            try {
+                session.getRemote().sendStringByFuture(mapper.writeValueAsString(m));
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
 
         @OnWebSocketMessage
@@ -99,14 +121,15 @@ public class Main {
             try {
             	Message<Object> msg = mapper.readValue(message, new TypeReference<Message<Object>>() {});
                 switch (msg.getType()) {
-	                case (PING): // this is a ping request, send the same message back to correct player
-	                    Session s = playerSessions.get(msg.getId());
-	                    s.getRemote().sendStringByFuture(message);
+	                case (PING):
+	                    // Session s = playerSessions.get(msg.getId());
+	                	long start = (long) msg.getData();
+	                	playerPings.get(msg.getId()).add(System.currentTimeMillis() - start);
 	                    break;
 	                case (ATTACK):
 	                	//System.out.println(message);
 	                	Message<Attack> m = mapper.readValue(message, new TypeReference<Message<Attack>>() {});
-	                	Attack a = (Attack) m.getData();
+	                	Attack a = m.getData();
 	                	a.setId(getNextId());
 	                	Player attackOwner = playersInGame.get(a.getOwnerID());
 	                	synchronized (game) {
@@ -122,14 +145,26 @@ public class Main {
 	                case (PLAYER_UPDATE):
 	                	//Player newInfo = mapper.readValue(m.getData(), Player.class);
 	                	Message<Player> m2 = mapper.readValue(message, new TypeReference<Message<Player>>() {});
-	                	Player update = (Player) m2.getData();
+	                	Player update = m2.getData();
 	                	int id = update.getId();
 	                	if (playersInGame.containsKey(id)) {
 		                	Player player = playersInGame.get(id);
 		                	updatePlayerInfo(player, update);
 	                	}
 	                	break;
-	                // case join game
+	                case (JOIN_GAME):
+	                	Message<Player> m3 = mapper.readValue(message, new TypeReference<Message<Player>>() {});
+	                	Player playerInfo = m3.getData();
+	                	Player newPlayer = new Player(playerInfo.getUsername(), playerInfo.gettype(), m3.getId());
+	                	newPlayer.setxPos(ARENA_WIDTH / 2);
+	                	newPlayer.setyPos(ARENA_HEIGHT / 2);
+	                	game.addPlayer(newPlayer);
+	                	playersInGame.put(newPlayer.getId(), newPlayer);
+	                	m3.setType(PLAYER_JOINED);
+	                	m3.setData(newPlayer);
+	                	System.out.println("Player " + newPlayer.getUsername() + " joined");
+	                	playerSessions.get(m3.getId()).getRemote().sendString(mapper.writeValueAsString(m3));
+	                	break;
                 }
             }
             catch (Exception e) {
@@ -174,7 +209,7 @@ public class Main {
     }
     
     private static void startGame() {
-        Player p1 = createNewPlayer(Player.WIZARD);
+        Player p1 = createNewPlayer("goon", Player.WIZARD, -1);
         game.addPlayer(p1);
         p1.setxPos(200);
         p1.setyPos(200);
@@ -182,9 +217,9 @@ public class Main {
         new Thread(new GameRunner(p1, game, attacksInGame, playersInGame, PLAYER_TIMEOUT, BROADCAST_DELAY, ARENA_WIDTH, ARENA_HEIGHT, HIT_DISTANCE)).start();
     }
     
-    private static Player createNewPlayer(String type) {
+    private static Player createNewPlayer(String type, String name, int id) {
         Player p = new Player();
-        p.setId(getNextId());
+        p.setId(id);
         p.settype(type);
         p.setammo(100);
         p.setmaxHP(10);
@@ -195,7 +230,7 @@ public class Main {
     }
     
     // Fetches the next unique id
-    private static int getNextId() {
+    public static int getNextId() {
         return id.incrementAndGet();
     }   
 }

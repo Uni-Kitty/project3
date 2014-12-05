@@ -48,3 +48,28 @@ h1 {
 #content {
 	display:inline;
 }
+
+#charSelector {
+	margin: 0;
+	padding: 0;
+	position: fixed;
+	top: 0;
+	bottom: 0;
+	left: 0;
+	right: 0;
+	background: #333333;
+	opacity: 0.75;
+	padding-top: 15%;
+	color: red;
+	text-decoration: bold;
+	font-size: 24pt;
+}
+
+#charSelector p {
+	opacity: 1;
+}
+
+#charSelector img {
+	margin-left: 20px;
+	opacity: 1;
+}
