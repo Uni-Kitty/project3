@@ -8,6 +8,9 @@ $(function() {
 	var WELCOME = "welcome";
 	var PLAYER_UPDATE = "player_update";
 	var ATTACK = "attack";
+  var wizardTexture = PIXI.Texture.fromImage("img/wizard-sm.png");
+  var rangerTexture = PIXI.Texture.fromImage("img/ranger-sm.png");
+  var fireballTexture = PIXI.Texture.fromImage("img/fireball-sm.png");
     var userid = 0;
     var MAX_SPEED = 6;
     var FRICTION = 0.97;
