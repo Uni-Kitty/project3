@@ -1,20 +1,7 @@
 $(function() {
 
-<<<<<<< HEAD
-	var FIREBALL = "fireball";
-	var WIZARD = "wizard";
-	var RANGER = "ranger";
-	var UPDATE = "update";
-	var PING = "ping";
-	var WELCOME = "welcome";
-	var PLAYER_UPDATE = "player_update";
-	var ATTACK = "attack";
 	var JOIN_GAME = "join_game";
 	var PLAYER_JOINED = "player_joined";
-    var wizardTexture = PIXI.Texture.fromImage("img/wizard-sm.png");
-    var rangerTexture = PIXI.Texture.fromImage("img/ranger-sm.png");
-    var fireballTexture = PIXI.Texture.fromImage("img/fireball-sm.png");
-=======
 	  var FIREBALL = "fireball";
 	  var WIZARD = "wizard";
 	  var RANGER = "ranger";
@@ -28,7 +15,6 @@ $(function() {
     var rangerTexture = PIXI.Texture.fromImage("img/ranger-sm.png");
     var fireballTexture = PIXI.Texture.fromImage("img/fireball-sm.png");
     var wallTexture = PIXI.Texture.fromImage("img/brick-wall.png");
->>>>>>> 52e24c0c44714025437f44f8a89ce4a3c44c8fcb
     var userid = 0;
     var MAX_SPEED = 6;
     var FRICTION = 0.97;
@@ -66,18 +52,12 @@ $(function() {
     document.getElementById("stageBox").appendChild(renderer.view);
     requestAnimFrame( animate );
     
-<<<<<<< HEAD
     var player = {};
     player.spectating = true;
-    
-    // addElementToStage(RANGER, STAGE_WIDTH / 2, STAGE_HEIGHT / 2, 0);
-=======
-    player = addElementToStage(RANGER, STAGE_WIDTH / 2, STAGE_HEIGHT / 2, 0);
     game.walls[0] = (addElementToStage(WALL, (STAGE_WIDTH / 4) - 10, (STAGE_HEIGHT / 4) + 10, -Math.PI / 4));
     game.walls[1] = (addElementToStage(WALL, (STAGE_WIDTH / 4) - 10, (3 * STAGE_HEIGHT / 4) - 10, Math.PI / 4));
     game.walls[2] = (addElementToStage(WALL, (3 * STAGE_WIDTH / 4) + 10, (STAGE_HEIGHT / 4) + 10, Math.PI / 4));
     game.walls[3] = (addElementToStage(WALL, (3 * STAGE_WIDTH / 4) + 10, (3 * STAGE_HEIGHT / 4) - 10, -Math.PI / 4));
->>>>>>> 52e24c0c44714025437f44f8a89ce4a3c44c8fcb
     
     function animate() {
         requestAnimFrame( animate );
@@ -125,12 +105,7 @@ $(function() {
     
     var serverAddress = "ws://54.69.151.4:9999/";
     if (document.location.hostname == "localhost")
-<<<<<<< HEAD
     	serverAddress = "ws://127.0.0.1:9999/";
-    
-=======
-    	  serverAddress = "ws://127.0.0.1:9999/";
->>>>>>> 52e24c0c44714025437f44f8a89ce4a3c44c8fcb
     var ws = new WebSocket(serverAddress);
     
     function startGame(name, type) {
@@ -174,7 +149,6 @@ $(function() {
     
     var i = 0;
     ws.onmessage = function (evt) {
-<<<<<<< HEAD
     	var message = JSON.parse(evt.data);
     	switch (message.type) {
     	case (WELCOME):
@@ -193,24 +167,6 @@ $(function() {
     			console.log(message.data);
     	    var data = message.data;
     		var playerIDs = []; // track IDs that are no longer in game
-=======
-    	  var message = JSON.parse(evt.data);
-    	  switch (message.type) {
-    	  case (WELCOME):
-    	      console.log("welcome msg received, id: " + message.id);
-    	      userid = message.id;
-    	      break;
-    	  case (PING):
-            var ping = new Date().getTime() - message.data;
-            pingNum.text(ping);
-            break;
-    	  case (UPDATE):
-    		    i++;
-    		    if (i % 100 == 1)
-    			      console.log(message.data);
-    	      var data = message.data;
-    		    var playerIDs = []; // track IDs that are no longer in game
->>>>>>> 52e24c0c44714025437f44f8a89ce4a3c44c8fcb
             var attackIDs = [];
     	      for (id in game.players) {
     	    	    playerIDs.push(id);
@@ -372,50 +328,27 @@ $(function() {
     });
 
     setInterval(function() {
-<<<<<<< HEAD
     	if (!player.spectating) {
-	    	player.vx = 0;
-	    	player.vy = 0;
-	    	if (keys.right)
-	        if (player.position.x < STAGE_WIDTH - 20)
-	    		  player.vx += MAX_SPEED;
-	    	if (keys.left)
-	        if (player.position.x > 20)
-	          player.vx -= MAX_SPEED;
-	    	if (keys.up)
-	        if (player.position.y > 20)
-	    		  player.vy -= MAX_SPEED;
-	    	if (keys.down)
-	        if (player.position.y < STAGE_HEIGHT - 20)
-	    		  player.vy += MAX_SPEED;
-	    	if (player.vx > 0)
-	    		player.scale.x = -1;
-	    	else if (player.vx < 0)
-	    		player.scale.x = 1;
-	    	player.position.x += player.vx;
-	    	player.position.y += player.vy;
+    		player.vx = 0;
+      	  player.vy = 0;
+      	  if (keys.right)
+              if (player.position.x < STAGE_WIDTH - 20)
+      		        player.vx += MAX_SPEED;
+      	  if (keys.left)
+              if (player.position.x > 20)
+                  player.vx -= MAX_SPEED;
+      	  if (keys.up)
+              if (player.position.y > 20)
+      		        player.vy -= MAX_SPEED;
+      	  if (keys.down)
+              if (player.position.y < STAGE_HEIGHT - 20)
+      		        player.vy += MAX_SPEED;
+      	  if (player.vx > 0)
+      		    player.scale.x = -1;
+      	  else if (player.vx < 0)
+      		    player.scale.x = 1;
+      	  player.position.x += player.vx;
+      	  player.position.y += player.vy;
     	}
-=======
-    	  player.vx = 0;
-    	  player.vy = 0;
-    	  if (keys.right)
-            if (player.position.x < STAGE_WIDTH - 20)
-    		        player.vx += MAX_SPEED;
-    	  if (keys.left)
-            if (player.position.x > 20)
-                player.vx -= MAX_SPEED;
-    	  if (keys.up)
-            if (player.position.y > 20)
-    		        player.vy -= MAX_SPEED;
-    	  if (keys.down)
-            if (player.position.y < STAGE_HEIGHT - 20)
-    		        player.vy += MAX_SPEED;
-    	  if (player.vx > 0)
-    		    player.scale.x = -1;
-    	  else if (player.vx < 0)
-    		    player.scale.x = 1;
-    	  player.position.x += player.vx;
-    	  player.position.y += player.vy;
->>>>>>> 52e24c0c44714025437f44f8a89ce4a3c44c8fcb
     }, 20);
 });
