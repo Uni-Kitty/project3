@@ -16,6 +16,8 @@ public class GameRunner implements Runnable {
 	private static int arenaWidth;
 	private static int arenaHeight;
 	private static int hitDistance;
+	
+	private static final long PRES_TIMEOUT = 30000;
     
     
     public GameRunner(Player p, Game g, ConcurrentMap<Integer, Attack> attacks, 
@@ -48,7 +50,7 @@ public class GameRunner implements Runnable {
                 		Attack a = it.next();
                 		a.xPos += a.getxVelocity();
                 		a.yPos += a.getyVelocity();
-                		if (!inArena(a) || /* isHit(a, playerGrid) */ hitPlayer(a, game.getPlayers())) {
+                		if (!inArena(a) || /*hitWall(a) || */  hitPlayer(a, game.getPlayers())) {
                 			attacksInGame.remove(a.getId());
                 			it.remove();
                 		}
@@ -57,7 +59,7 @@ public class GameRunner implements Runnable {
                 	Iterator<Present> iterPresents = game.getPresents().iterator();
                 	while(iterPresents.hasNext()) {
                 		Present pres = iterPresents.next();
-                		if (playerOnPresent(pres, game.getPlayers())) {
+                		if (playerOnPresent(pres, game.getPlayers()) || presentExpired(pres)) {
                 			iterPresents.remove();
                 		}
                 	}
@@ -100,6 +102,28 @@ public class GameRunner implements Runnable {
         }
     }
     
+    /*private boolean hitWall(Attack a) {
+    	// top left
+    	float x1 = (float) (190 - 2 * 28.28);
+    	float y1 = (float) (160 - 2 * 28.28);
+    	
+    	// bottom right
+    	float x2 = (float) (610 - 2 * 28.28);
+    	float y2 = (float) (440 - 2 * 28.28);
+    	
+    	// top right
+    	float x3 = (float) (610 + 2 * 28.28);
+    	float y3 = (float) (160 - 2 * 28.28);
+    	
+    	// bottom left
+    	float x4 = (float) (190 + 2 * 28.28);
+    	float y4 = (float) (440 - 2 * 28.28);
+    	
+    	for (int i = 0; i < 5; i++) {
+    		// if (isHit())
+    	}
+    } */
+    
     private static void sendDisconnectedMessage(Player p) {
     	// TODO
     }
@@ -127,17 +151,29 @@ public class GameRunner implements Runnable {
     		float xDelta = Math.abs(pres.getxPos() - play.getxPos());
     		float yDelta = Math.abs(pres.getyPos() - play.getyPos());
     		if (hit(xDelta, yDelta)) {
-    			//givePresent(pres, play);
-    			// TODO: send present to player and decide on system for how much to increase stats by
+    			givePresent(pres, play);
     			return true;
     		}
     	}
     	return false;
     }
+    
+    private boolean presentExpired(Present pres) {
+    	return System.currentTimeMillis() - pres.getStartTime() > PRES_TIMEOUT;
+    }
+    
+    private void givePresent(Present pres, Player winner) {
+    	String presType = pres.getType();
+    	if (presType == "ammo") {
+    		winner.incAmmo(10);
+    	} else  if (presType == "health") {
+    		winner.incHP(6);
+    	}
+    }
 
     private boolean hit(float xDelta, float yDelta) {
     	return xDelta < hitDistance && yDelta < hitDistance;
-    }
+    } 
 
     private boolean inArena(Attack a) {
     	float x = a.getxPos();
@@ -148,13 +184,13 @@ public class GameRunner implements Runnable {
     // handle attack a hitting player p
     private void registerAttack(Attack a, Player p) {
     	Player attackOwner = playersInGame.get(a.getOwnerID());
-    	p.setcurrHP(p.getcurrHP() - a.getAtkDmg());
-    	attackOwner.sethitCount(attackOwner.gethitCount() + 1);
+    	p.decHP(attackOwner.getatkDmg());
+    	attackOwner.incHitCount();
     	if (p.getcurrHP() <= 0) {
     		playersInGame.remove(p.getId());
     		game.removePlayer(p);
     		sendDisconnectedMessage(p);
-    		attackOwner.setkills(attackOwner.getkills() + 1);
+    		attackOwner.incKills();
     	}
     }
 }

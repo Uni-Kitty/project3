@@ -32,12 +32,12 @@ public class Main {
     
     public static final int PORT = 9999;
     public static final int BROADCAST_DELAY = 20; // Game loop delay in ms
-    public static final int PRESENT_DELAY = 10000; // amt of delay between presents appearing in game
     public static final long PLAYER_TIMEOUT = 5000; // Time to wait before dropping player in ms
     public static final String PING = "ping";
     public static final String ATTACK = "attack";
     public static final String UPDATE = "update";
     public static final String WELCOME = "welcome";
+    public static final String JOIN_GAME = "join_game";
     public static final String PLAYER_UPDATE = "player_update";
     public static final int ARENA_WIDTH = 800;
     public static final int ARENA_HEIGHT = 600;
@@ -77,19 +77,42 @@ public class Main {
 
         @OnWebSocketConnect
         public void onConnect(Session session) {
-            Player newPlayer = createNewPlayer(Player.WIZARD);
-            game.addPlayer(newPlayer);
-            playersInGame.put(newPlayer.getId(), newPlayer);
-            playerSessions.put(newPlayer.getId(), session);
+        	// send welcome message
+        	// send ping
+        	// start broadcasting gamegit 
+        	
+        	// create temp player for the new connection ID
+        	int id = getNextId();
+        	
+            // send welcome message
             Message<Object> m = new Message<Object>();
-            m.setId(newPlayer.getId());
+            m.setId(id);
             m.setType(WELCOME);
             try {
                 session.getRemote().sendStringByFuture(mapper.writeValueAsString(m));
             } catch (Exception e) {
                 e.printStackTrace();
             }
+            
+            // add session to active sessions so player gets game broadcasts
+            playerSessions.put(id, session);
+            
+            // send first ping
+            // ping(session);
+            // TODO: work on pinging system
+            
             System.out.println("Connect: " + session.getRemoteAddress().getAddress());
+        }
+        
+        public void ping(Session session) {
+        	Message<Object> m = new Message<Object>();
+        	m.setType(PING);
+            m.setData(new Long(System.currentTimeMillis()));
+            try {
+                session.getRemote().sendStringByFuture(mapper.writeValueAsString(m));
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
 
         @OnWebSocketMessage
@@ -99,7 +122,9 @@ public class Main {
                 switch (msg.getType()) {
 	                case (PING): // this is a ping request, send the same message back to correct player
 	                    Session s = playerSessions.get(msg.getId());
-	                    s.getRemote().sendStringByFuture(message);
+	                	long start = (long) msg.getData();
+	                	Player p = playersInGame.get(msg.getId());
+	                	p.setRtt(System.currentTimeMillis() - start);
 	                    break;
 	                case (ATTACK):
 	                	//System.out.println(message);
@@ -126,6 +151,12 @@ public class Main {
 		                	Player player = playersInGame.get(id);
 		                	updatePlayerInfo(player, update);
 	                	}
+	                	break;
+	                case (JOIN_GAME):
+	                	Message<Player> m3 = mapper.readValue(message, new TypeReference<Message<Player>>() {});
+	                	Player newPlayer = (Player) msg.getData();
+	                	game.addPlayer(newPlayer);
+	                	playersInGame.put(newPlayer.getId(), newPlayer);
 	                	break;
                 }
             }
@@ -175,7 +206,7 @@ public class Main {
         game.addPlayer(p1);
         p1.setxPos(200);
         p1.setyPos(200);
-        new Thread(new PresentBuilder(game, ARENA_WIDTH, ARENA_HEIGHT, PRESENT_DELAY)).start();
+        new Thread(new PresentBuilder(game, ARENA_WIDTH, ARENA_HEIGHT)).start();
         new Thread(new GameRunner(p1, game, attacksInGame, playersInGame, PLAYER_TIMEOUT, BROADCAST_DELAY, ARENA_WIDTH, ARENA_HEIGHT, HIT_DISTANCE)).start();
     }
     

@@ -10,12 +10,13 @@ public class Player extends GameEntity {
   private int hitCount;
   private String type;
   private long lastUpdate;
+  private long rtt;
   
   public static final String WIZARD = "wizard";
   public static final String RANGER = "ranger";
 
-    public Player() {}
-    
+	public Player() {}
+	
 	// takes initial x and y and player ID
 	public Player(float x, float y, int identifier, float xVel, float yVel) {
 		xPos = x;
@@ -40,6 +41,14 @@ public class Player extends GameEntity {
   public void setcurrHP(int currHP) {
     this.currHP = currHP;
   }
+  
+  public void incHP(int amt) {
+	  this.currHP += amt;
+  }
+  
+  public void decHP(int amt) {
+	  this.currHP -= amt;
+  }
 
   public int getatkDmg() {
     return atkDmg;
@@ -56,13 +65,25 @@ public class Player extends GameEntity {
   public void setammo(int ammo) {
     this.ammo = ammo;
   }
+  
+  public void incAmmo(int amt) {
+	this.ammo += amt;
+  }
 
+  public void decAmmo(int amt) {
+	this.ammo -= amt;
+  }
+  
   public int getkills() {
     return kills;
   }
 
   public void setkills(int kills) {
     this.kills = kills;
+  }
+  
+  public void incKills() {	
+	this.kills += 1;  
   }
 
   public int gethitCount() {
@@ -71,6 +92,10 @@ public class Player extends GameEntity {
 
   public void sethitCount(int hitCount) {
     this.hitCount = hitCount;
+  }
+  
+  public void incHitCount() {
+	this.hitCount += 1;
   }
 
   public String gettype() {
@@ -87,5 +112,13 @@ public class Player extends GameEntity {
 	
 	public void setLastUpdate(long lastUpdate) {
 		this.lastUpdate = lastUpdate;
+	}
+
+	public long getRtt() {
+		return rtt;
+	}
+
+	public void setRtt(long rtt) {
+		this.rtt = rtt;
 	}
 }

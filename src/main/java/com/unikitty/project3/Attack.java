@@ -3,7 +3,6 @@ package com.unikitty.project3;
 public class Attack extends GameEntity {
 	
     private int ownerID;
-    private int atkDmg;
     private String type;
     private float rotation;
     
@@ -19,7 +18,6 @@ public class Attack extends GameEntity {
         yPos = y;
         xVelocity = xVel;
         yVelocity = yVel;
-        atkDmg = pwr;
     }
 
     public int getOwnerID() {
@@ -29,14 +27,6 @@ public class Attack extends GameEntity {
     public void setOwnerID(int ownerID) {
         this.ownerID = ownerID;
     }
-
-	public int getAtkDmg() {
-		return atkDmg;
-	}
-
-	public void setAtkDmg(int atkDmg) {
-		this.atkDmg = atkDmg;
-	}
 
 	public String getType() {
 		return type;
