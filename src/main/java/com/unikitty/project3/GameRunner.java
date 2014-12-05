@@ -16,6 +16,8 @@ public class GameRunner implements Runnable {
 	private static int arenaWidth;
 	private static int arenaHeight;
 	private static int hitDistance;
+	
+	private static final long PRES_TIMEOUT = 30000;
     
     
     public GameRunner(Player p, Game g, ConcurrentMap<Integer, Attack> attacks, 
@@ -57,7 +59,7 @@ public class GameRunner implements Runnable {
                 	Iterator<Present> iterPresents = game.getPresents().iterator();
                 	while(iterPresents.hasNext()) {
                 		Present pres = iterPresents.next();
-                		if (playerOnPresent(pres, game.getPlayers())) {
+                		if (playerOnPresent(pres, game.getPlayers()) || presentExpired(pres)) {
                 			iterPresents.remove();
                 		}
                 	}
@@ -127,12 +129,24 @@ public class GameRunner implements Runnable {
     		float xDelta = Math.abs(pres.getxPos() - play.getxPos());
     		float yDelta = Math.abs(pres.getyPos() - play.getyPos());
     		if (hit(xDelta, yDelta)) {
-    			//givePresent(pres, play);
-    			// TODO: send present to player and decide on system for how much to increase stats by
+    			givePresent(pres, play);
     			return true;
     		}
     	}
     	return false;
+    }
+    
+    private boolean presentExpired(Present pres) {
+    	return System.currentTimeMillis() - pres.getStartTime() > PRES_TIMEOUT;
+    }
+    
+    private void givePresent(Present pres, Player winner) {
+    	String presType = pres.getType();
+    	if (presType == "ammo") {
+    		winner.incAmmo(10);
+    	} else  if (presType == "health") {
+    		winner.incHP(6);
+    	}
     }
 
     private boolean hit(float xDelta, float yDelta) {
@@ -148,13 +162,13 @@ public class GameRunner implements Runnable {
     // handle attack a hitting player p
     private void registerAttack(Attack a, Player p) {
     	Player attackOwner = playersInGame.get(a.getOwnerID());
-    	p.setcurrHP(p.getcurrHP() - a.getAtkDmg());
-    	attackOwner.sethitCount(attackOwner.gethitCount() + 1);
+    	p.decHP(attackOwner.getatkDmg());
+    	attackOwner.incHitCount();
     	if (p.getcurrHP() <= 0) {
     		playersInGame.remove(p.getId());
     		game.removePlayer(p);
     		sendDisconnectedMessage(p);
-    		attackOwner.setkills(attackOwner.getkills() + 1);
+    		attackOwner.incKills();
     	}
     }
 }

@@ -32,7 +32,6 @@ public class Main {
     
     public static final int PORT = 9999;
     public static final int BROADCAST_DELAY = 20; // Game loop delay in ms
-    public static final int PRESENT_DELAY = 10000; // amt of delay between presents appearing in game
     public static final long PLAYER_TIMEOUT = 5000; // Time to wait before dropping player in ms
     public static final String PING = "ping";
     public static final String ATTACK = "attack";
@@ -77,6 +76,9 @@ public class Main {
 
         @OnWebSocketConnect
         public void onConnect(Session session) {
+        	// send welcome message
+        	// send ping
+        	// start broadcasting game
             Player newPlayer = createNewPlayer(Player.WIZARD);
             game.addPlayer(newPlayer);
             playersInGame.put(newPlayer.getId(), newPlayer);
@@ -127,6 +129,7 @@ public class Main {
 		                	updatePlayerInfo(player, update);
 	                	}
 	                	break;
+	                // case join game
                 }
             }
             catch (Exception e) {
