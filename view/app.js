@@ -9,7 +9,7 @@ $(function() {
 	var PLAYER_UPDATE = "player_update";
 	var ATTACK = "attack";
     var userid = 0;
-    var MAX_SPEED = 6000;
+    var MAX_SPEED = 6;
     var FRICTION = 0.97;
     var upArrow = 38;
     var downArrow = 40;
@@ -264,18 +264,22 @@ $(function() {
     	player.vx = 0;
     	player.vy = 0;
     	if (keys.right)
-    		player.vx += MAX_SPEED;
+        if (player.position.x < STAGE_WIDTH - 20)
+    		  player.vx += MAX_SPEED;
     	if (keys.left)
-    		player.vx -= MAX_SPEED;
+        if (player.position.x > 20)
+          player.vx -= MAX_SPEED;
     	if (keys.up)
-    		player.vy -= MAX_SPEED;
+        if (player.position.y > 20)
+    		  player.vy -= MAX_SPEED;
     	if (keys.down)
-    		player.vy += MAX_SPEED;
+        if (player.position.y < STAGE_HEIGHT - 20)
+    		  player.vy += MAX_SPEED;
     	if (player.vx > 0)
     		player.scale.x = -1;
     	else if (player.vx < 0)
     		player.scale.x = 1;
-    	player.position.x += player.vx / 1000;
-    	player.position.y += player.vy / 1000;
+    	player.position.x += player.vx;
+    	player.position.y += player.vy;
     }, 20);
 });
