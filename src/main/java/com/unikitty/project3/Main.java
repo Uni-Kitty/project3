@@ -78,7 +78,7 @@ public class Main {
         public void onConnect(Session session) {
         	// send welcome message
         	// send ping
-        	// start broadcasting game
+        	// start broadcasting gamegit 
             Player newPlayer = createNewPlayer(Player.WIZARD);
             game.addPlayer(newPlayer);
             playersInGame.put(newPlayer.getId(), newPlayer);
@@ -178,7 +178,7 @@ public class Main {
         game.addPlayer(p1);
         p1.setxPos(200);
         p1.setyPos(200);
-        new Thread(new PresentBuilder(game, ARENA_WIDTH, ARENA_HEIGHT, PRESENT_DELAY)).start();
+        new Thread(new PresentBuilder(game, ARENA_WIDTH, ARENA_HEIGHT)).start();
         new Thread(new GameRunner(p1, game, attacksInGame, playersInGame, PLAYER_TIMEOUT, BROADCAST_DELAY, ARENA_WIDTH, ARENA_HEIGHT, HIT_DISTANCE)).start();
     }
     
