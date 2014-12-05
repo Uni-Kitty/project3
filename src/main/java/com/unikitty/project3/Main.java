@@ -209,24 +209,8 @@ public class Main {
     }
     
     private static void startGame() {
-        Player p1 = createNewPlayer("goon", Player.WIZARD, -1);
-        game.addPlayer(p1);
-        p1.setxPos(200);
-        p1.setyPos(200);
         new Thread(new PresentBuilder(game, ARENA_WIDTH, ARENA_HEIGHT)).start();
-        new Thread(new GameRunner(p1, game, attacksInGame, playersInGame, PLAYER_TIMEOUT, BROADCAST_DELAY, ARENA_WIDTH, ARENA_HEIGHT, HIT_DISTANCE)).start();
-    }
-    
-    private static Player createNewPlayer(String type, String name, int id) {
-        Player p = new Player();
-        p.setId(id);
-        p.settype(type);
-        p.setammo(100);
-        p.setmaxHP(10);
-        p.setcurrHP(10);
-        p.setatkDmg(2);
-        p.setLastUpdate(System.currentTimeMillis());
-        return p;
+        new Thread(new GameRunner(game, attacksInGame, playersInGame, PLAYER_TIMEOUT, BROADCAST_DELAY, ARENA_WIDTH, ARENA_HEIGHT, HIT_DISTANCE)).start();
     }
     
     // Fetches the next unique id

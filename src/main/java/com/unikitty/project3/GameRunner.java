@@ -6,8 +6,6 @@ import java.util.concurrent.ConcurrentMap;
 
 // updates the state of the game by moving attacks, registering hits, and removing inactive players
 public class GameRunner implements Runnable {
-    
-    private Player player;
     private Game game;
     private ConcurrentMap<Integer, Attack> attacksInGame;
     private ConcurrentMap<Integer, Player> playersInGame;
@@ -21,9 +19,8 @@ public class GameRunner implements Runnable {
 	private static final float WALL_COL_DIST = 10;
     
     
-    public GameRunner(Player p, Game g, ConcurrentMap<Integer, Attack> attacks, 
+    public GameRunner(Game g, ConcurrentMap<Integer, Attack> attacks, 
     		           ConcurrentMap<Integer, Player> players, long pTime, int bDel, int aW, int aH, int hD) {
-        this.player = p;
         game = g;
         attacksInGame = attacks;
         playersInGame = players;
@@ -35,15 +32,9 @@ public class GameRunner implements Runnable {
     }
     
     public void run() {
-        int xDelta = 0;
-        int yDelta = 1;
         while (true) {
             try {
-            	/*
-            	int[][] playerGrid = new int[ARENA_HEIGHT / CELL_SIZE][ARENA_WIDTH / CELL_SIZE];
-            	assignPlayersToGrid(playerGrid, game.getPlayers());
             	// update Attack positions and register any hits
-            	*/
             	synchronized (game) {
             		// update attacks
                 	Iterator<Attack> it = game.getAttacks().iterator();
@@ -75,25 +66,6 @@ public class GameRunner implements Runnable {
                 			sendDisconnectedMessage(p);
                 		}
                 	}
-                    if (player.xPos == 200 && player.yPos == 200) {
-                        xDelta = 0;
-                        yDelta = 1;
-                    }
-                    else if (player.xPos == 200 && player.yPos == 400) {
-                        xDelta = 1;
-                        yDelta = 0;
-                    }
-                    else if (player.xPos == 800 && player.yPos == 400) {
-                        xDelta = 0;
-                        yDelta = -1;
-                    }
-                    else if (player.xPos == 800 && player.yPos == 200) {
-                        xDelta = -1;
-                        yDelta = 0;
-                    }
-                    player.xPos += xDelta;
-                    player.yPos += yDelta;
-                    player.setLastUpdate(System.currentTimeMillis());
             	}
                 Thread.sleep(broadcastDelay);
             }
