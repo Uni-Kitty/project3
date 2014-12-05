@@ -50,7 +50,7 @@ public class GameRunner implements Runnable {
                 		Attack a = it.next();
                 		a.xPos += a.getxVelocity();
                 		a.yPos += a.getyVelocity();
-                		if (!inArena(a) || /* isHit(a, playerGrid) */ hitPlayer(a, game.getPlayers())) {
+                		if (!inArena(a) || /*hitWall(a) || */  hitPlayer(a, game.getPlayers())) {
                 			attacksInGame.remove(a.getId());
                 			it.remove();
                 		}
@@ -102,6 +102,28 @@ public class GameRunner implements Runnable {
         }
     }
     
+    /*private boolean hitWall(Attack a) {
+    	// top left
+    	float x1 = (float) (190 - 2 * 28.28);
+    	float y1 = (float) (160 - 2 * 28.28);
+    	
+    	// bottom right
+    	float x2 = (float) (610 - 2 * 28.28);
+    	float y2 = (float) (440 - 2 * 28.28);
+    	
+    	// top right
+    	float x3 = (float) (610 + 2 * 28.28);
+    	float y3 = (float) (160 - 2 * 28.28);
+    	
+    	// bottom left
+    	float x4 = (float) (190 + 2 * 28.28);
+    	float y4 = (float) (440 - 2 * 28.28);
+    	
+    	for (int i = 0; i < 5; i++) {
+    		// if (isHit())
+    	}
+    } */
+    
     private static void sendDisconnectedMessage(Player p) {
     	// TODO
     }
@@ -151,7 +173,7 @@ public class GameRunner implements Runnable {
 
     private boolean hit(float xDelta, float yDelta) {
     	return xDelta < hitDistance && yDelta < hitDistance;
-    }
+    } 
 
     private boolean inArena(Attack a) {
     	float x = a.getxPos();

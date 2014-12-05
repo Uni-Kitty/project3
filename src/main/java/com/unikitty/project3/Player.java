@@ -10,12 +10,13 @@ public class Player extends GameEntity {
   private int hitCount;
   private String type;
   private long lastUpdate;
+  private long rtt;
   
   public static final String WIZARD = "wizard";
   public static final String RANGER = "ranger";
 
-    public Player() {}
-    
+	public Player() {}
+	
 	// takes initial x and y and player ID
 	public Player(float x, float y, int identifier, float xVel, float yVel) {
 		xPos = x;
@@ -111,5 +112,13 @@ public class Player extends GameEntity {
 	
 	public void setLastUpdate(long lastUpdate) {
 		this.lastUpdate = lastUpdate;
+	}
+
+	public long getRtt() {
+		return rtt;
+	}
+
+	public void setRtt(long rtt) {
+		this.rtt = rtt;
 	}
 }
