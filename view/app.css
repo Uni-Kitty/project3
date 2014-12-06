@@ -28,18 +28,27 @@ h1 {
 	display: inline-block;
     height: 600px;
     color: #00FF26;
-}
-
-#statBox {
-	
-}
-
-#jumbotron {
-	width: 15em;
+    width: 200px;
     border: 1px solid #00FF26;
 }
 
-#statBox p, #jumbotron p {
+#statBox {
+    text-decoration: bold;
+}
+
+#jumbotron {
+
+}
+
+#statBox p {
+	float:left;
+	clear: both;
+	margin: 2px;
+	padding: 0;
+	font-size: 20pt;
+}
+
+#jumbotron p {
 	float: left;
 	clear: both;
 	margin: 2px;
@@ -57,19 +66,18 @@ h1 {
 	bottom: 0;
 	left: 0;
 	right: 0;
-	background: #333333;
-	opacity: 0.75;
+	background: #222222;
+	opacity: 0.85;
 	padding-top: 15%;
 	color: red;
 	text-decoration: bold;
 	font-size: 24pt;
 }
 
-#charSelector p {
-	opacity: 1;
+#charSelector img {
+	margin-left: 40px;
 }
 
-#charSelector img {
-	margin-left: 20px;
+#charSelector * {
 	opacity: 1;
 }

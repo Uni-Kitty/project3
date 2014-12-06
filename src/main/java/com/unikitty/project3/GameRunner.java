@@ -4,20 +4,28 @@ import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
 
+import org.codehaus.jackson.map.ObjectMapper;
+
 // updates the state of the game by moving attacks, registering hits, and removing inactive players
 public class GameRunner implements Runnable {
+    
     private Game game;
     private ConcurrentMap<Integer, Attack> attacksInGame;
     private ConcurrentMap<Integer, Player> playersInGame;
-    private static long playerTimeout;
     private static int broadcastDelay;
 	private static int arenaWidth;
 	private static int arenaHeight;
 	private static int hitDistance;
+	private static Player happyKitty = new Player("UNIKITTY", Player.HAPPY_KITTY, -99);
+	private static Player angryKitty = new Player("UNIKITTY", Player.ANGRY_KITTY, -100);
+	private static ObjectMapper mapper = new ObjectMapper();
 	
 	private static final long PRES_TIMEOUT = 30000;
 	private static final float WALL_COL_DIST = 10;
 	private static final long GHOST_DELAY = 5000;
+	
+	public static final String YOU_HAVE_DIED = "you_have_died";
+	
     
     
     public GameRunner(Game g, ConcurrentMap<Integer, Attack> attacks, 
@@ -25,16 +33,23 @@ public class GameRunner implements Runnable {
         game = g;
         attacksInGame = attacks;
         playersInGame = players;
-        playerTimeout = pTime;
         broadcastDelay = bDel;
         arenaWidth = aW;
         arenaHeight = aH;
         hitDistance = hD;
+        game.addPlayer(happyKitty);
+        game.addPlayer(angryKitty);
     }
     
     public void run() {
+        happyKitty.setxPos(-100);
+        happyKitty.setyPos(Main.ARENA_HEIGHT / 2);
+        angryKitty.setyPos(-100);
+        angryKitty.setxPos(Main.ARENA_WIDTH / 2);
+        int step = 0;
         while (true) {
             try {
+                step++;
             	synchronized (game) {
             		// update attacks
                 	Iterator<Attack> it = game.getAttacks().iterator();
@@ -55,24 +70,24 @@ public class GameRunner implements Runnable {
                 			iterPresents.remove();
                 		}
                 	}
-                	// delete inactive players and move unikitties
-                	long currentTime = System.currentTimeMillis();
-                	Iterator<Player> iter = game.getPlayers().iterator();
-                	while (iter.hasNext()) {
-                		Player p = iter.next();
-                		if (currentTime - p.getLastUpdate() > playerTimeout) {
-                			iter.remove();
-                			playersInGame.remove(p.getId());
-                			sendDisconnectedMessage(p);
-                		} else if (p.gettype() == "unikitty") {
-                			// TODO: move and fire attacks from unikitty
-                			// figure out when to remove them.. 
-                			//p.setxPos(p.getxPos() + 1);
-                			//Attack a = new Attack(0, 0, p.getxPos, p.getyPos(), )
-                			//game.addAttack(a);
-		                	//attacksInGame.put(a.getId(), a);
-                		}
+                	if (step == 550 && step == 1550) // happy kitty is in middle of screen
+                	    dropPresents();
+                	if (step > 500 && step <= 600) {
+                	    happyKitty.setxPos(happyKitty.getxPos() + 10);
                 	}
+                    else if (step > 1000 && step <= 1100) {
+                        angryKitty.setyPos(angryKitty.getyPos() + 10);
+                        angryKittyShoot();
+                	}
+                	else if (step > 1500 && step <= 1600) {
+                        happyKitty.setxPos(happyKitty.getxPos() - 10);
+                	}
+                    else if (step > 2000 && step <= 2100) {
+                        angryKitty.setyPos(angryKitty.getyPos() - 10);
+                        angryKittyShoot();
+                    }
+                	if (step == 2100)
+                	    step = 0;
                 	// delete deadPlayers after Timeout
                 	Iterator<DeadPlayer> itGraves = game.getGraveYard().iterator();
                 	while(itGraves.hasNext()) {
@@ -89,6 +104,14 @@ public class GameRunner implements Runnable {
                 e.printStackTrace();
             }
         }
+    }
+    
+    private void angryKittyShoot() {
+        
+    }
+    
+    private void dropPresents() {
+        
     }
     
     private boolean hitPresent(Attack a, Set<Present> presents) {
@@ -143,8 +166,17 @@ public class GameRunner implements Runnable {
     	return xDelta < WALL_COL_DIST && yDelta < WALL_COL_DIST;
     } 
     
-    private static void sendDisconnectedMessage(Player p) {
-    	// TODO
+    private static void sendDeadMessage(int id, String message) {
+    	Message<String> msg = new Message<String>();
+    	msg.setType(YOU_HAVE_DIED);
+    	msg.setData(message);
+    	msg.setId(id);
+    	try {
+    	    Main.sendMessageToPlayer(id, mapper.writeValueAsString(msg));
+    	}
+    	catch (Exception e) {
+    	    
+    	}
     }
 
     // Simple O(P) isHit
@@ -206,12 +238,16 @@ public class GameRunner implements Runnable {
     	p.decHP(attackOwner.getatkDmg());
     	attackOwner.incHitCount();
     	if (p.getcurrHP() <= 0) {
-    		playersInGame.remove(p.getId());
-    		game.removePlayer(p);
-    		game.buildGrave(new DeadPlayer(p));
-    		sendDisconnectedMessage(p);
+    	    killPlayer(p, attackOwner);
     		attackOwner.incKills();
     	}
+    }
+    
+    private void killPlayer(Player killed, Player killer) {
+        playersInGame.remove(killed.getId());
+        game.removePlayer(killed);
+        game.buildGrave(new DeadPlayer(killed));
+        sendDeadMessage(killed.getId(), "YOU WERE KILLED BY " + killer.getUsername());
     }
 }
 

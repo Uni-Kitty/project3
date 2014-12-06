@@ -10,6 +10,7 @@ import org.codehaus.jackson.JsonParser;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.type.TypeReference;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.websocket.api.RemoteEndpoint;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
@@ -71,14 +72,7 @@ public class Main {
 
         @OnWebSocketConnect
         public void onConnect(Session session) {
-        	// send welcome message
-        	// send ping
-        	// start broadcasting gamegit 
-        	
-        	// create temp player for the new connection ID
         	int id = getNextId();
-        	
-            // send welcome message
             Message<Object> m = new Message<Object>();
             m.setId(id);
             m.setType(WELCOME);
@@ -194,6 +188,22 @@ public class Main {
         }
         finally {
             
+        }
+    }
+    
+    public static void sendMessageToPlayer(int id, String message) {
+        try {
+            if (playerSessions.containsKey(id)) {
+                Session session = playerSessions.get(id);
+                if (session.isOpen())
+                    session.getRemote().sendStringByFuture(message);
+                else {
+                    // TODO: anything to handle here?
+                }
+            }
+        }
+        catch (Exception e) {
+            e.printStackTrace();
         }
     }
     

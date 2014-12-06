@@ -3,6 +3,7 @@ package com.unikitty.project3;
 import java.util.Random;
 
 public class PresentBuilder implements Runnable {
+    
 	private static final String[] POSSIBLE_PRESENTS = {"ammo", "health"};
 	private static final Random randy = new Random();
 	

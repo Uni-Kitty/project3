@@ -1,22 +1,30 @@
 $(function() {
 
+	// messages
     var JOIN_GAME = "join_game";
     var PLAYER_JOINED = "player_joined";
-    var FIREBALL = "fireball";
-    var ARROW = "arrow";
-    var WIZARD = "wizard";
-    var RANGER = "ranger";
-    var WALL = "wall";
     var UPDATE = "update";
-    var PING = "ping";
     var WELCOME = "welcome";
     var PLAYER_UPDATE = "player_update";
     var ATTACK = "attack";
+    var YOU_HAVE_DIED = "you_have_died";
+    var PING = "ping";
+    // attacks
+    var FIREBALL = "fireball";
+    var ARROW = "arrow";
+    // player classes
+    var WIZARD = "wizard";
+    var RANGER = "ranger";
+    var HAPPY_KITTY = "happy_kitty";
+    var ANGRY_KITTY = "angry_kitty";
+    // msc image types
+    var WALL = "wall";
     var PRESENT = "present";
     var PRESENT0 = "present0";
     var PRESENT1 = "present1";
     var PRESENT2 = "present2";
     var PRESENT3 = "present3";
+    // images
     var wizardImg = "img/wizard-sm.png";
     var rangerImg = "img/ranger-sm.png";
     var fireballImg = "img/fireball-sm.png";
@@ -26,9 +34,12 @@ $(function() {
     var presentImg1 = "img/present2.png";
     var presentImg2 = "img/present3.png";
     var presentImg3 = "img/present4.png";
+    var greenSquareImg = "img/green_square.png";
+    var happyKittyImg = "img/happyKitty-sm.png";
+    var angryKittyImg = "img/angryKitty-sm.png";
+    var PLAYER_NAME_FONT = {font:"14px Courier"};
     var userid = 0;
     var MAX_SPEED = 6;
-    var FRICTION = 0.97;
     var upArrow = 38;
     var downArrow = 40;
     var rightArrow = 39;
@@ -41,13 +52,13 @@ $(function() {
     var STAGE_HEIGHT = 600;
     var game = {};
     var keys = {};
+    var player = createNewPlayer();
     var type = WIZARD;
     var name = "";
     game.players = {}; // map id->player
     game.attacks = {}; // map id->attack
     game.presents = {}; // map id->present
     game.walls = {}; // map id->wall
-
     // text areas
     var pingNum = $("#pingNum");
     var classBox = $("#class");
@@ -73,9 +84,7 @@ $(function() {
     }
     
     function assetsLoaded() {
-        
-        var player = {};
-        player.spectating = true;
+    	
         game.walls[0] = (addElementToStage(WALL, (STAGE_WIDTH / 4) - 10, (STAGE_HEIGHT / 4) + 10, -Math.PI / 4));
         game.walls[1] = (addElementToStage(WALL, (STAGE_WIDTH / 4) - 10, (3 * STAGE_HEIGHT / 4) - 10, Math.PI / 4));
         game.walls[2] = (addElementToStage(WALL, (3 * STAGE_WIDTH / 4) + 10, (STAGE_HEIGHT / 4) + 10, Math.PI / 4));
@@ -112,6 +121,12 @@ $(function() {
             case PRESENT3:
                 sprite = PIXI.Sprite.fromImage(presentImg3);
                 break;
+            case HAPPY_KITTY:
+            	sprite = PIXI.Sprite.fromImage(happyKittyImg);
+            	break;
+            case ANGRY_KITTY:
+            	sprite = PIXI.Sprite.fromImage(angryKittyImg);
+            	break;
             }
             sprite.anchor.x = 0.5;
             sprite.anchor.y = 0.5;
@@ -142,10 +157,10 @@ $(function() {
         function joinGameSequence() {
             $('body').append('<div id="charSelector"></div>');
             $("#charSelector").append("<p>CHOOSE YOUR NAME</p>");
-            $("#charSelector").append("<input type='text' id='nameBox'></input>");
+            $("#charSelector").append("<input type='text' maxlength='8' id='nameBox' value='" + name + "'></input>");
             $("#charSelector").append("<button id='okGoButton'>OK</Button>");
             $("#okGoButton").click(function() {
-                var name = $("#nameBox").val();
+                name = $("#nameBox").val();
                 if (name != "") {
                     $("#charSelector").empty();
                     $("#charSelector").append("<p>SELECT YOUR HERO</p>");
@@ -158,6 +173,18 @@ $(function() {
                         startGame(name, RANGER);
                     })
                 }
+            });
+        }
+        
+        function youHaveDied(message) {
+        	stage.removeChild(player);
+        	player = createNewPlayer();
+            $('body').append('<div id="charSelector"></div>');
+            $("#charSelector").append("<p>" + message + "</p>");
+            $("#charSelector").append("<button id='okDiedButton'>OK</Button>");
+            $("#okDiedButton").click(function() {
+                $('#charSelector').remove();
+                joinGameSequence();
             });
         }
         
@@ -174,6 +201,9 @@ $(function() {
                 console.log("welcome msg received, id: " + message.id);
                 userid = message.id;
                 break;
+            case (YOU_HAVE_DIED):
+            	youHaveDied(message.data);
+            	break;
             case (PING):
                 ws.send(message);
                 break;
@@ -181,6 +211,7 @@ $(function() {
                 console.log(message);
                 var playerInfo = message.data;
                 player = addElementToStage(playerInfo.type, playerInfo.xPos, playerInfo.yPos, 0);
+                addNameToPlayer(player, playerInfo.username);
                 player.type = playerInfo.type;
                 player.id = playerInfo.id;
                 player.spectating = false;
@@ -188,8 +219,9 @@ $(function() {
                 break;
             case (UPDATE):
                 i++;
-                if (i % 100 == 1)
+                if (i % 100 == 1) {
                     console.log(message.data);
+                }
                 var data = message.data;
                 var playerIDs = []; // track IDs that are no longer in game
                 var attackIDs = [];
@@ -203,28 +235,42 @@ $(function() {
                 for (id in game.presents) {
                     presentIDs.push(id);
                 }
-                data.players.forEach(function(player) {
-                    var id = player.id;
+                data.players.forEach(function(p) {
+                    var id = p.id;
                     if (id == userid) {
                         // update my own stats here
-                        currHP.text(player.currHP);
-                        maxHP.text(player.maxHP);
-                        ammo.text(player.ammo);
-                        atkDmg.text(player.atkDmg);
-                        classBox.text(player.type);
+                        currHP.text(p.currHP);
+                        maxHP.text(p.maxHP);
+                        ammo.text(p.ammo);
+                        atkDmg.text(p.atkDmg);
+                        classBox.text(p.type);
                         if (i == 20)
-                            console.log(player);
+                            console.log(p);
+                        player.currHP = p.currHP;
+                        player.maxHP = p.maxHP;
+                        updateHealthBarWidth(player);
                     }
                     else if (game.players[id] == null) {
-                        game.players[id] = addElementToStage(player.type, player.xPos, player.yPos, 0);
+                        game.players[id] = addElementToStage(p.type, p.xPos, p.yPos, 0);
+                        addNameToPlayer(game.players[id], p.username);
+                        game.players[id].currHP = p.currHP;
+                        game.players[id].maxHP = p.maxHP;
+                        updateHealthBarWidth(game.players[id]);
                     }
                     else {
-                        if (game.players[id].position.x > player.xPos)
+                        if (game.players[id].position.x > p.xPos) {
                             game.players[id].scale.x = 1;
-                        else if (game.players[id].position.x < player.xPos)
+                            game.players[id].text.scale.x = 1;
+                        }
+                        else if (game.players[id].position.x < p.xPos) {
                             game.players[id].scale.x = -1;
-                        game.players[id].position.x = player.xPos;
-                        game.players[id].position.y = player.yPos;
+                            game.players[id].text.scale.x = -1;
+                        }
+                        game.players[id].position.x = p.xPos;
+                        game.players[id].position.y = p.yPos;
+                        game.players[id].currHP = p.currHP;
+                        game.players[id].maxHP = p.maxHP;
+                        updateHealthBarWidth(game.players[id]);
                         playerIDs.pop(id);
                     }
                 });
@@ -359,16 +405,20 @@ $(function() {
                     player.vx += MAX_SPEED;
                 if (keys.left && player.position.x > 20 && !checkWallCollision(player.position.x, player.position.y))
                     player.vx -= MAX_SPEED;
-    	          if (keys.up && player.position.y > 20 && !checkWallCollision(player.position.x, player.position.y))
-    		            player.vy -= MAX_SPEED;
-    	          if (keys.down && player.position.y < STAGE_HEIGHT - 20)
-    		            player.vy += MAX_SPEED;
-    	          if (player.vx > 0)
-    		            player.scale.x = -1;
-    	          else if (player.vx < 0)
-    		            player.scale.x = 1;
-    	          player.position.x += player.vx;
-    	          player.position.y += player.vy;
+			    if (keys.up && player.position.y > 20 && !checkWallCollision(player.position.x, player.position.y))
+			        player.vy -= MAX_SPEED;
+			    if (keys.down && player.position.y < STAGE_HEIGHT - 20)
+			        player.vy += MAX_SPEED;
+			    if (player.vx > 0) {
+			        player.scale.x = -1;
+			        player.text.scale.x = -1;
+			    }
+			    else if (player.vx < 0) {
+			        player.scale.x = 1;
+			        player.text.scale.x = 1;
+			    }
+			    player.position.x += player.vx;
+			    player.position.y += player.vy;
             }
         }, 20);
 
@@ -407,5 +457,30 @@ $(function() {
                 break;
             }
         });
+    }
+    
+    function updateHealthBarWidth(player) {
+    	var width = ( 80.0 * player.currHP ) / player.maxHP;
+    	// console.log(width);
+    	player.healthBar.width = width;
+    }
+    
+    function addNameToPlayer(player, name) {
+        player.text = new PIXI.Text(name, PLAYER_NAME_FONT);
+        player.healthBar = PIXI.Sprite.fromImage(greenSquareImg);
+        player.healthBar.anchor.x = 0.5;
+        player.healthBar.anchor.y = -1.5;
+        player.healthBar.height = 14;
+        player.healthBar.width = 80;
+        player.addChild(player.healthBar);
+        player.text.anchor.x = 0.5;
+        player.text.anchor.y = -1.5;
+        player.addChild(player.text);
+    }
+    
+    function createNewPlayer() {
+    	var p = {};
+    	p.spectating = true;
+    	return p;
     }
 });
