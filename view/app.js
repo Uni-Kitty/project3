@@ -205,7 +205,7 @@ $(function() {
             	youHaveDied(message.data);
             	break;
             case (PING):
-                ws.send(message);
+                ws.send(JSON.stringify(message));
                 break;
             case (PLAYER_JOINED):
                 console.log(message);
@@ -244,6 +244,7 @@ $(function() {
                         ammo.text(p.ammo);
                         atkDmg.text(p.atkDmg);
                         classBox.text(p.type);
+                        pingNum.text(p.rtt);
                         if (i == 20)
                             console.log(p);
                         player.currHP = p.currHP;

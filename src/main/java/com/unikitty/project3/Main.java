@@ -1,6 +1,7 @@
 package com.unikitty.project3;
 
-import java.util.Queue;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -10,7 +11,6 @@ import org.codehaus.jackson.JsonParser;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.type.TypeReference;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.websocket.api.RemoteEndpoint;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
@@ -42,9 +42,9 @@ public class Main {
 	private static ConcurrentMap<Integer, Player> playersInGame = new ConcurrentHashMap<Integer, Player>();
 	private static ConcurrentMap<Integer, Attack> attacksInGame = new ConcurrentHashMap<Integer, Attack>();
 	private static ConcurrentMap<Integer, Session> playerSessions = new ConcurrentHashMap<Integer, Session>();
-	private static ConcurrentMap<Integer, Queue<Long>> playerPings = new ConcurrentHashMap<Integer, Queue<Long>>();
 	private static ObjectMapper mapper = new ObjectMapper(); // mapper for obj<-->JSON
 	private static AtomicInteger id = new AtomicInteger(1); // avoid race conditions, use atomic int for ids
+	private static PlayerPinger playerPinger = new PlayerPinger();
 	
 	static {
         mapper.configure(JsonGenerator.Feature.QUOTE_FIELD_NAMES, true);
@@ -81,14 +81,8 @@ public class Main {
             } catch (Exception e) {
                 e.printStackTrace();
             }
-            
-            // add session to active sessions so player gets game broadcasts
             playerSessions.put(id, session);
-            playerPings.put(id, new FixedSizeQueue<Long>(PING_BUFFER_SIZE));
-            // send first ping
-            // ping(session);
-            // TODO: work on pinging system
-            
+            playerPinger.addPlayer(id);
             System.out.println("Connect: " + session.getRemoteAddress().getAddress());
         }
         
@@ -110,8 +104,9 @@ public class Main {
                 switch (msg.getType()) {
 	                case (PING):
 	                    // Session s = playerSessions.get(msg.getId());
-	                	long start = (long) msg.getData();
-	                	playerPings.get(msg.getId()).add(System.currentTimeMillis() - start);
+	                    Message<Long> msgLong = mapper.readValue(message, new TypeReference<Message<Long>>(){});
+	                	long time = (long) msgLong.getData();
+	                    playerPinger.recordPing(msg.getId(), time);
 	                    break;
 	                case (ATTACK):
 	                	//System.out.println(message);
@@ -158,6 +153,11 @@ public class Main {
                 e.printStackTrace();
             }
         }
+    }
+    
+    public static void recordTime(int id, long time) {
+        if (playersInGame.containsKey(id))
+            playersInGame.get(id).setRtt(time);
     }
     
     private static void updatePlayerInfo(Player player, Player update) {
@@ -214,11 +214,15 @@ public class Main {
     private static void startGame() {
         new Thread(new PresentBuilder(game, ARENA_WIDTH, ARENA_HEIGHT)).start();
         new Thread(new GameRunner(game, attacksInGame, playersInGame, PLAYER_TIMEOUT, BROADCAST_DELAY, ARENA_WIDTH, ARENA_HEIGHT, HIT_DISTANCE)).start();
-        // TODO: new Thread(new Unikitty(game)).start();
+        new Thread(playerPinger).start();
     }
     
     // Fetches the next unique id
     public static int getNextId() {
         return id.incrementAndGet();
-    }   
+    }
+    
+    public static boolean isPlayerActive(int id) {
+        return playerSessions.containsKey(id);
+    }
 }
