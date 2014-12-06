@@ -19,13 +19,6 @@ import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.eclipse.jetty.websocket.server.WebSocketHandler;
 import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
 
-/**
- * How to use Jackson:
- * 
- * Object to JSON : mapper.writeValueAsString(m);
- * 
- * JSON to Object : (Attack) mapper.readValue(inputString, Attack.class);
- */
 public class Main {
     
     public static final int PORT = 9999;
@@ -211,6 +204,7 @@ public class Main {
     private static void startGame() {
         new Thread(new PresentBuilder(game, ARENA_WIDTH, ARENA_HEIGHT)).start();
         new Thread(new GameRunner(game, attacksInGame, playersInGame, PLAYER_TIMEOUT, BROADCAST_DELAY, ARENA_WIDTH, ARENA_HEIGHT, HIT_DISTANCE)).start();
+        // TODO: new Thread(new Unikitty(game)).start();
     }
     
     // Fetches the next unique id

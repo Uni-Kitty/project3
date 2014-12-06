@@ -8,8 +8,21 @@ public class Game {
 	private Set<Player>  players  = Collections.synchronizedSet(new HashSet<Player>());
 	private Set<Attack>  attacks  = Collections.synchronizedSet(new HashSet<Attack>()); 
 	private Set<Present> presents = Collections.synchronizedSet(new HashSet<Present>());
+	private Set<DeadPlayer> graveYard = Collections.synchronizedSet(new HashSet<DeadPlayer>());
 	
 	public Game() {}
+	
+	public void buildGrave(DeadPlayer p) {
+		graveYard.add(p);
+	}
+	
+	public Set<DeadPlayer> getGraveYard() {
+		return graveYard;
+	}
+
+	public void setGraveYard(Set<DeadPlayer> graveYard) {
+		this.graveYard = graveYard;
+	}
 	
 	public void addAttack(Attack a) {
 		attacks.add(a);

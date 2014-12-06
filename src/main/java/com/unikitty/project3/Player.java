@@ -15,6 +15,7 @@ public class Player extends GameEntity {
   
   public static final String WIZARD = "wizard";
   public static final String RANGER = "ranger";
+  public static final String UNIKITTY = "unikitty";
 
 	public Player() {}
 	
@@ -44,6 +45,12 @@ public class Player extends GameEntity {
 	        atkDmg = 3;
 	        ammo = 30;
 	        break;
+	    case (UNIKITTY):
+	    	//TODO: set x and y position
+	    	maxHP = 30;
+	    	currHP = 30;
+	    	atkDmg = 7;
+	    	ammo = 200;
 	    }
 	    lastUpdate = System.currentTimeMillis();
 	}

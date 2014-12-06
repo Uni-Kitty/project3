@@ -9,7 +9,7 @@ public class GameRunner implements Runnable {
     private Game game;
     private ConcurrentMap<Integer, Attack> attacksInGame;
     private ConcurrentMap<Integer, Player> playersInGame;
-    private static long playerTimeout;;
+    private static long playerTimeout;
     private static int broadcastDelay;
 	private static int arenaWidth;
 	private static int arenaHeight;
@@ -17,6 +17,7 @@ public class GameRunner implements Runnable {
 	
 	private static final long PRES_TIMEOUT = 30000;
 	private static final float WALL_COL_DIST = 10;
+	private static final long GHOST_DELAY = 5000;
     
     
     public GameRunner(Game g, ConcurrentMap<Integer, Attack> attacks, 
@@ -34,7 +35,6 @@ public class GameRunner implements Runnable {
     public void run() {
         while (true) {
             try {
-            	// update Attack positions and register any hits
             	synchronized (game) {
             		// update attacks
                 	Iterator<Attack> it = game.getAttacks().iterator();
@@ -42,7 +42,7 @@ public class GameRunner implements Runnable {
                 		Attack a = it.next();
                 		a.xPos += a.getxVelocity();
                 		a.yPos += a.getyVelocity();
-                		if (!inArena(a) || hitWall(a) || hitPlayer(a, game.getPlayers())) {
+                		if (!inArena(a) || hitWall(a) || hitPlayer(a, game.getPlayers()) || hitPresent(a, game.getPresents())) {
                 			attacksInGame.remove(a.getId());
                 			it.remove();
                 		}
@@ -55,7 +55,7 @@ public class GameRunner implements Runnable {
                 			iterPresents.remove();
                 		}
                 	}
-                	// delete inactive players
+                	// delete inactive players and move unikitties
                 	long currentTime = System.currentTimeMillis();
                 	Iterator<Player> iter = game.getPlayers().iterator();
                 	while (iter.hasNext()) {
@@ -64,8 +64,24 @@ public class GameRunner implements Runnable {
                 			iter.remove();
                 			playersInGame.remove(p.getId());
                 			sendDisconnectedMessage(p);
+                		} else if (p.gettype() == "unikitty") {
+                			// TODO: move and fire attacks from unikitty
+                			// figure out when to remove them.. 
+                			//p.setxPos(p.getxPos() + 1);
+                			//Attack a = new Attack(0, 0, p.getxPos, p.getyPos(), )
+                			//game.addAttack(a);
+		                	//attacksInGame.put(a.getId(), a);
                 		}
                 	}
+                	// delete deadPlayers after Timeout
+                	Iterator<DeadPlayer> itGraves = game.getGraveYard().iterator();
+                	while(itGraves.hasNext()) {
+                		DeadPlayer nextGhost = itGraves.next();
+                		if (System.currentTimeMillis() - nextGhost.getDeathTime() > GHOST_DELAY) {
+                			itGraves.remove();
+                		}
+                	}
+                	
             	}
                 Thread.sleep(broadcastDelay);
             }
@@ -75,13 +91,27 @@ public class GameRunner implements Runnable {
         }
     }
     
+    private boolean hitPresent(Attack a, Set<Present> presents) {
+    	Iterator<Present> it = presents.iterator();
+    	while(it.hasNext()) {
+    		Present p = it.next();
+    		float xDelta = Math.abs(p.getxPos() - a.getxPos());
+    		float yDelta = Math.abs(p.getyPos() - a.getyPos());
+    		if (hit(xDelta, yDelta)) {
+    			it.remove();
+    			return true;
+    		}
+    	}
+    	return false;
+    }
+    
     private boolean hitWall(Attack a) {
     	return checkLineNE(190, 160, a) || checkLineNE(610, 440, a) || checkLineNW(610, 160, a) || checkLineNW(190, 440, a);
     }
     
     private boolean checkLineNE(int x, int y, Attack a) {
     	float x1 = (float) (x - 4 * 14.142);
-    	float y1 = (float) (y - 4 * 14.142);
+    	float y1 = (float) (y + 4 * 14.142);
     	for(int i = 0; i < 9; i++) {
     		float xDelta = Math.abs(a.getxPos() - x1);
     		float yDelta = Math.abs(a.getyPos() - y1);
@@ -89,14 +119,14 @@ public class GameRunner implements Runnable {
     			return true;
     		}
     		x1 += 14.142;
-    		y1 += 14.142;
+    		y1 -= 14.142;
     	}
     	return false;
     }
     
     private boolean checkLineNW(int x, int y, Attack a) {
     	float x1 = (float) (x + 4 * 14.142);
-    	float y1 = (float) (y - 4 * 14.142);
+    	float y1 = (float) (y + 4 * 14.142);
     	for(int i = 0; i < 9; i++) {
     		float xDelta = Math.abs(a.getxPos() - x1);
     		float yDelta = Math.abs(a.getyPos() - y1);
@@ -104,7 +134,7 @@ public class GameRunner implements Runnable {
     			return true;
     		}
     		x1 -= 14.142;
-    		y1 += 14.142;
+    		y1 -= 14.142;
     	}
     	return false;
     }
@@ -157,7 +187,7 @@ public class GameRunner implements Runnable {
     		winner.incAmmo(10);
     	} else  if (presType == "health") {
     		winner.incHP(6);
-    	}
+    	} 
     }
 
     private boolean hit(float xDelta, float yDelta) {
@@ -178,6 +208,7 @@ public class GameRunner implements Runnable {
     	if (p.getcurrHP() <= 0) {
     		playersInGame.remove(p.getId());
     		game.removePlayer(p);
+    		game.buildGrave(new DeadPlayer(p));
     		sendDisconnectedMessage(p);
     		attackOwner.incKills();
     	}
