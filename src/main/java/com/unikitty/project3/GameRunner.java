@@ -1,6 +1,7 @@
 package com.unikitty.project3;
 
 import java.util.Iterator;
+import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
 
@@ -19,6 +20,8 @@ public class GameRunner implements Runnable {
 	private static Player happyKitty = new Player("UNIKITTY", Player.HAPPY_KITTY, -99);
 	private static Player angryKitty = new Player("UNIKITTY", Player.ANGRY_KITTY, -100);
 	private static ObjectMapper mapper = new ObjectMapper();
+	private static Random randy = new Random();
+	private static String[] POSSIBLE_PRESENTS;
 	
 	private static final long PRES_TIMEOUT = 30000;
 	private static final float WALL_COL_DIST = 10;
@@ -29,7 +32,7 @@ public class GameRunner implements Runnable {
     
     
     public GameRunner(Game g, ConcurrentMap<Integer, Attack> attacks, 
-    		           ConcurrentMap<Integer, Player> players, long pTime, int bDel, int aW, int aH, int hD) {
+    		           ConcurrentMap<Integer, Player> players, long pTime, int bDel, int aW, int aH, int hD, String[] pp) {
         game = g;
         attacksInGame = attacks;
         playersInGame = players;
@@ -39,6 +42,7 @@ public class GameRunner implements Runnable {
         hitDistance = hD;
         game.addPlayer(happyKitty);
         game.addPlayer(angryKitty);
+        POSSIBLE_PRESENTS = pp;
     }
     
     public void run() {
@@ -70,8 +74,11 @@ public class GameRunner implements Runnable {
                 			iterPresents.remove();
                 		}
                 	}
-                	if (step == 550 && step == 1550) // happy kitty is in middle of screen
-                	    dropPresents();
+                	if ((step > 510 && step < 590) || (step > 1510 && step < 1590)) {// happy kitty is running across screen
+                		if (randy.nextInt(14) == 0) {  //chance of dropping present each step
+                			dropPresents(happyKitty.getxPos(), happyKitty.getyPos());
+                		}
+            		}
                 	if (step > 500 && step <= 600) {
                 	    happyKitty.setxPos(happyKitty.getxPos() + 10);
                 	}
@@ -86,8 +93,9 @@ public class GameRunner implements Runnable {
                         angryKitty.setyPos(angryKitty.getyPos() - 10);
                         angryKittyShoot();
                     }
-                	if (step == 2100)
+                	if (step == 2100) {
                 	    step = 0;
+                	}
                 	// delete deadPlayers after Timeout
                 	Iterator<DeadPlayer> itGraves = game.getGraveYard().iterator();
                 	while(itGraves.hasNext()) {
@@ -96,7 +104,6 @@ public class GameRunner implements Runnable {
                 			itGraves.remove();
                 		}
                 	}
-                	
             	}
                 Thread.sleep(broadcastDelay);
             }
@@ -107,11 +114,27 @@ public class GameRunner implements Runnable {
     }
     
     private void angryKittyShoot() {
-        
+    	// angry kitty collision
+        for (Player p : game.getPlayers()) {
+    		float xDelta = Math.abs(angryKitty.getxPos() - p.getxPos());
+    		float yDelta = Math.abs(angryKitty.getyPos() - p.getyPos());
+    		if (hit(xDelta, yDelta)) {
+    			p.decHP(angryKitty.getatkDmg());
+    			if (p.getcurrHP() <= 0) {
+    				killPlayer(p, angryKitty);
+    			}
+    		}
+        }
+        // TODO: shoot randomly
     }
     
-    private void dropPresents() {
-        
+    private void dropPresents(float x, float y) {
+		int presentIndex = randy.nextInt(POSSIBLE_PRESENTS.length);
+		int imageNum = randy.nextInt(4);
+		Present gamePresent = new Present(x, y, POSSIBLE_PRESENTS[presentIndex],
+							System.currentTimeMillis(), imageNum);
+		gamePresent.setId(Main.getNextId());
+		game.addPresent(gamePresent);
     }
     
     private boolean hitPresent(Attack a, Set<Present> presents) {
@@ -201,7 +224,7 @@ public class GameRunner implements Runnable {
     	for (Player play : players) {
     		float xDelta = Math.abs(pres.getxPos() - play.getxPos());
     		float yDelta = Math.abs(pres.getyPos() - play.getyPos());
-    		if (hit(xDelta, yDelta)) {
+    		if (hit(xDelta, yDelta) && (play.gettype() != "happy_kitty")) {
     			givePresent(pres, play);
     			return true;
     		}
