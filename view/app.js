@@ -50,6 +50,15 @@ $(function() {
     var leftKey = 65;
     var STAGE_WIDTH = 800;
     var STAGE_HEIGHT = 600;
+	  var WALL_COL_DIST = 10;
+    var UPPER_LEFT_WALL_X = (STAGE_WIDTH / 4) - 10;
+    var UPPER_LEFT_WALL_Y = (STAGE_HEIGHT / 4) + 10;
+    var LOWER_LEFT_WALL_X = (STAGE_WIDTH / 4) - 10;
+    var LOWER_LEFT_WALL_Y = (3 * STAGE_HEIGHT / 4) - 10;
+    var UPPER_RIGHT_WALL_X = (3 * STAGE_WIDTH / 4) + 10;
+    var UPPER_RIGHT_WALL_Y = (STAGE_HEIGHT / 4) + 10;
+    var LOWER_RIGHT_WALL_X = (3 * STAGE_WIDTH / 4) + 10;
+    var LOWER_RIGHT_WALL_Y = (3 * STAGE_HEIGHT / 4) - 10;
     var game = {};
     var keys = {};
     var player = createNewPlayer();
@@ -84,11 +93,15 @@ $(function() {
     }
     
     function assetsLoaded() {
-    	
-        game.walls[0] = (addElementToStage(WALL, (STAGE_WIDTH / 4) - 10, (STAGE_HEIGHT / 4) + 10, -Math.PI / 4));
-        game.walls[1] = (addElementToStage(WALL, (STAGE_WIDTH / 4) - 10, (3 * STAGE_HEIGHT / 4) - 10, Math.PI / 4));
-        game.walls[2] = (addElementToStage(WALL, (3 * STAGE_WIDTH / 4) + 10, (STAGE_HEIGHT / 4) + 10, Math.PI / 4));
-        game.walls[3] = (addElementToStage(WALL, (3 * STAGE_WIDTH / 4) + 10, (3 * STAGE_HEIGHT / 4) - 10, -Math.PI / 4));
+    	  
+        // Upper left
+        game.walls[0] = (addElementToStage(WALL, UPPER_LEFT_WALL_X, UPPER_LEFT_WALL_Y, -Math.PI / 4));
+        // Lower left
+        game.walls[1] = (addElementToStage(WALL, LOWER_LEFT_WALL_X, LOWER_LEFT_WALL_Y, Math.PI / 4));
+        // Upper right
+        game.walls[2] = (addElementToStage(WALL, UPPER_RIGHT_WALL_X, UPPER_RIGHT_WALL_Y, Math.PI / 4));
+        // Lower right
+        game.walls[3] = (addElementToStage(WALL, LOWER_RIGHT_WALL_X, LOWER_RIGHT_WALL_Y, -Math.PI / 4));
         
         // Creates and adds element to stage, returns reference to the element
         function addElementToStage(image, x, y, rotation) {
@@ -390,36 +403,78 @@ $(function() {
             }
         });
 
-        function checkWallCollision(x, y) {
-            var collision;
-            for (var i = 100; i > -50; i -= 20) {
-                collision = collision || (x > (STAGE_WIDTH / 4) - 10 + (i - 25) && x <= (STAGE_WIDTH / 4) - 10 + i) && (y > (STAGE_HEIGHT / 4) + 10 - (i - 20) && y <= (STAGE_HEIGHT / 4) + 10 - (i - 45))
-            }
-            return collision;
+        function checkWallNE(x, y) {
+            var x1 = x - 4 * 14.142;
+            var y1 = y + 4 * 14.142;
+            for(var i = 0; i <= 9; i++) {
+    		        var xDelta = Math.abs(player.position.x - x1);
+    		        var yDelta = Math.abs(player.position.y - y1);
+    		        if (isWallCollision(xDelta, yDelta)) {
+    			          return true;
+    		        }
+    		        x1 += 14.142;
+    		        y1 -= 14.142;
+    	      }
+    	      return false;
+        }
+
+        function checkWallNW(x, y) {
+            var x1 = x + 4 * 14.142;
+            var y1 = y + 4 * 14.142;
+            for(var i = 0; i <= 9; i++) {
+    		        var xDelta = Math.abs(player.position.x - x1);
+    		        var yDelta = Math.abs(player.position.y - y1);
+    		        if (isWallCollision(xDelta, yDelta)) {
+    			          return true;
+    		        }
+    		        x1 -= 14.142;
+    		        y1 -= 14.142;
+    	      }
+    	      return false;
+        }
+
+        function isWallCollision(xDelta, yDelta) {
+    	      return xDelta < WALL_COL_DIST && yDelta < WALL_COL_DIST;
+        } 
+
+        function hitWallGoingRight() {
+            return checkWallNE(UPPER_LEFT_WALL_X - 20,UPPER_LEFT_WALL_Y) || checkWallNE(LOWER_RIGHT_WALL_X - 20,LOWER_RIGHT_WALL_Y) || checkWallNW(UPPER_RIGHT_WALL_X - 20,UPPER_RIGHT_WALL_Y) || checkWallNW(LOWER_LEFT_WALL_X - 20,LOWER_LEFT_WALL_Y)
+        }
+
+        function hitWallGoingLeft() {
+            return checkWallNE(UPPER_LEFT_WALL_X + 20,UPPER_LEFT_WALL_Y) || checkWallNE(LOWER_RIGHT_WALL_X + 20,LOWER_RIGHT_WALL_Y) || checkWallNW(UPPER_RIGHT_WALL_X + 20,UPPER_RIGHT_WALL_Y) || checkWallNW(LOWER_LEFT_WALL_X + 20,LOWER_LEFT_WALL_Y)
+        }
+
+        function hitWallGoingUp() {
+            return checkWallNE(UPPER_LEFT_WALL_X,UPPER_LEFT_WALL_Y + 20) || checkWallNE(LOWER_RIGHT_WALL_X,LOWER_RIGHT_WALL_Y + 20) || checkWallNW(UPPER_RIGHT_WALL_X,UPPER_RIGHT_WALL_Y + 20) || checkWallNW(LOWER_LEFT_WALL_X,LOWER_LEFT_WALL_Y + 20)
+        }
+
+        function hitWallGoingDown() {
+            return checkWallNE(UPPER_LEFT_WALL_X,UPPER_LEFT_WALL_Y - 20) || checkWallNE(LOWER_RIGHT_WALL_X,LOWER_RIGHT_WALL_Y - 20) || checkWallNW(UPPER_RIGHT_WALL_X,UPPER_RIGHT_WALL_Y - 20) || checkWallNW(LOWER_LEFT_WALL_X,LOWER_LEFT_WALL_Y - 20)
         }
 
         setInterval(function() {
             if (!player.spectating) {
     	          player.vx = 0;
     	          player.vy = 0;
-                if (keys.right && player.position.x < STAGE_WIDTH - 20)
+                if (keys.right && player.position.x < STAGE_WIDTH - 20 && !hitWallGoingRight())
                     player.vx += MAX_SPEED;
-                if (keys.left && player.position.x > 20 && !checkWallCollision(player.position.x, player.position.y))
+                if (keys.left && player.position.x > 20 && !hitWallGoingLeft())
                     player.vx -= MAX_SPEED;
-			    if (keys.up && player.position.y > 20 && !checkWallCollision(player.position.x, player.position.y))
-			        player.vy -= MAX_SPEED;
-			    if (keys.down && player.position.y < STAGE_HEIGHT - 20)
-			        player.vy += MAX_SPEED;
-			    if (player.vx > 0) {
-			        player.scale.x = -1;
-			        player.text.scale.x = -1;
-			    }
-			    else if (player.vx < 0) {
-			        player.scale.x = 1;
-			        player.text.scale.x = 1;
-			    }
-			    player.position.x += player.vx;
-			    player.position.y += player.vy;
+			          if (keys.up && player.position.y > 20 && !hitWallGoingUp())
+			              player.vy -= MAX_SPEED;
+			          if (keys.down && player.position.y < STAGE_HEIGHT - 20 && !hitWallGoingDown())
+			              player.vy += MAX_SPEED;
+			          if (player.vx > 0) {
+			              player.scale.x = -1;
+			              player.text.scale.x = -1;
+			          }
+			          else if (player.vx < 0) {
+			              player.scale.x = 1;
+			              player.text.scale.x = 1;
+			          }
+			          player.position.x += player.vx;
+			          player.position.y += player.vy;
             }
         }, 20);
 
