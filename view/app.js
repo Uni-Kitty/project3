@@ -17,6 +17,7 @@ $(function() {
     var RANGER = "ranger";
     var HAPPY_KITTY = "happy_kitty";
     var ANGRY_KITTY = "angry_kitty";
+    var UNIKITTY = "UNIKITTY";
     // msc image types
     var WALL = "wall";
     var PRESENT = "present";
@@ -25,8 +26,6 @@ $(function() {
     var PRESENT2 = "present2";
     var PRESENT3 = "present3";
     // images
-    var wizardImg = "img/wizard-sm.png";
-    var rangerImg = "img/ranger-sm.png";
     var fireballImg = "img/fireball-sm.png";
     var arrowImg = "img/arrow-sm.png";
     var wallImg = "img/brick-wall.png";
@@ -34,7 +33,7 @@ $(function() {
     var presentImg1 = "img/present2.png";
     var presentImg2 = "img/present3.png";
     var presentImg3 = "img/present4.png";
-    var greenSquareImg = "img/green_square.png";
+    var greenSquareImg = "img/square-green.png";
     var happyKittyImg = "img/happyKitty-sm.png";
     var angryKittyImg = "img/angryKitty-sm.png";
     var PLAYER_NAME_FONT = {font:"14px Courier"};
@@ -51,6 +50,8 @@ $(function() {
     var STAGE_WIDTH = 800;
     var STAGE_HEIGHT = 600;
 	var WALL_COL_DIST = 10;
+	var PLAYER_HEIGHT = 32;
+	var PLAYER_WIDTH = 24;
     var UPPER_LEFT_WALL_X = (STAGE_WIDTH / 4) - 10;
     var UPPER_LEFT_WALL_Y = (STAGE_HEIGHT / 4) + 10;
     var LOWER_LEFT_WALL_X = (STAGE_WIDTH / 4) - 10;
@@ -96,14 +97,20 @@ $(function() {
     }
     
     // Creates and adds element to stage, returns reference to the element
-    function addElementToStage(image, x, y, rotation) {
+    function addElementToStage(image, x, y, rotation, color) {
         var sprite;
         switch (image) {
         case WIZARD:
-            sprite = new PIXI.Sprite.fromImage(wizardImg);
+            var texture = new PIXI.Texture.fromImage("img/wizard-" + color + ".png");
+            texture.height = 32;
+            texture.width = 24;
+            sprite = new PIXI.Sprite(texture);
             break;
         case RANGER:
-            sprite = new PIXI.Sprite.fromImage(rangerImg);
+            var texture = new PIXI.Texture.fromImage("img/ranger-" + color + ".png");
+            sprite = new PIXI.Sprite(texture);
+            // sprite.height = PLAYER_HEIGHT;
+            // sprite.width = PLAYER_WIDTH;
             break;
         case FIREBALL:
             sprite = new PIXI.Sprite.fromImage(fireballImg);
@@ -191,13 +198,13 @@ $(function() {
     // function assetsLoaded() {
     	  
         // Upper left
-        game.walls[0] = (addElementToStage(WALL, UPPER_LEFT_WALL_X, UPPER_LEFT_WALL_Y, -Math.PI / 4));
+        game.walls[0] = (addElementToStage(WALL, UPPER_LEFT_WALL_X, UPPER_LEFT_WALL_Y, -Math.PI / 4), 0);
         // Lower left
-        game.walls[1] = (addElementToStage(WALL, LOWER_LEFT_WALL_X, LOWER_LEFT_WALL_Y, Math.PI / 4));
+        game.walls[1] = (addElementToStage(WALL, LOWER_LEFT_WALL_X, LOWER_LEFT_WALL_Y, Math.PI / 4), 0);
         // Upper right
-        game.walls[2] = (addElementToStage(WALL, UPPER_RIGHT_WALL_X, UPPER_RIGHT_WALL_Y, Math.PI / 4));
+        game.walls[2] = (addElementToStage(WALL, UPPER_RIGHT_WALL_X, UPPER_RIGHT_WALL_Y, Math.PI / 4), 0);
         // Lower right
-        game.walls[3] = (addElementToStage(WALL, LOWER_RIGHT_WALL_X, LOWER_RIGHT_WALL_Y, -Math.PI / 4));
+        game.walls[3] = (addElementToStage(WALL, LOWER_RIGHT_WALL_X, LOWER_RIGHT_WALL_Y, -Math.PI / 4), 0);
         
         var serverAddress = "ws://54.69.151.4:9999/";
         if (document.location.hostname == "localhost")
@@ -226,7 +233,7 @@ $(function() {
             case (PLAYER_JOINED):
                 console.log(message);
                 var playerInfo = message.data;
-                player = addElementToStage(playerInfo.type, playerInfo.xPos, playerInfo.yPos, 0);
+                player = addElementToStage(playerInfo.type, playerInfo.xPos, playerInfo.yPos, 0, playerInfo.color);
                 addNameToPlayer(player, playerInfo.username);
                 player.type = playerInfo.type;
                 player.id = playerInfo.id;
@@ -438,6 +445,7 @@ $(function() {
         var currTime = new Date().getTime();
         rttTable.html("<tr><th></th><th>Player</th><th>RTT</th></tr>");
         data.players.forEach(function(p) {
+            if (p.username != UNIKITTY)
             rttTable.append(createTableEntry(p));
             var id = p.id;
             if (id == userid) {
@@ -454,7 +462,7 @@ $(function() {
             }
             else if (game.players[id] == null) {
                 // add new player
-                game.players[id] = addElementToStage(p.type, p.xPos, p.yPos, 0);
+                game.players[id] = addElementToStage(p.type, p.xPos, p.yPos, 0, p.color);
                 addNameToPlayer(game.players[id], p.username);
                 game.players[id].currHP = p.currHP;
                 game.players[id].maxHP = p.maxHP;
@@ -548,7 +556,7 @@ $(function() {
     
     // create text for table entry
     function createTableEntry(player) {
-        var result = "<tr><td><img src='" + greenSquareImg + "' /></td><td>" + player.username + "</td><td>" + player.rtt + "</td></tr>"; // TODO: add color square
+        var result = "<tr><td><img src='img/square-" + player.color + ".png' /></td><td>" + player.username + "</td><td>" + player.rtt + "</td></tr>"; // TODO: add color square
         return result;
     }
 });

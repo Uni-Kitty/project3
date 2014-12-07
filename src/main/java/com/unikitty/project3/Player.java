@@ -10,6 +10,7 @@ public class Player extends GameEntity {
   private int hitCount;
   private String type;
   private String username;
+  private String color;
   private long lastUpdate;
   private long rtt;
   
@@ -33,6 +34,7 @@ public class Player extends GameEntity {
 	    this.id = id;
 	    this.username = name;
 	    this.type = type;
+	    this.color = Color.COLORS[id % 7];
 	    switch (type) {
 	    case (WIZARD):
 	        maxHP = 10;
@@ -56,6 +58,15 @@ public class Player extends GameEntity {
 	    }
 	    lastUpdate = System.currentTimeMillis();
 	}
+	
+	public void incMaxHP(int amount) {
+	    maxHP = Math.max(1, maxHP + amount);
+	    currHP = Math.min(currHP, maxHP);
+	}
+	
+	public void incDmg(int amount) {
+	    atkDmg += amount;
+	}
 
   public int getmaxHP() {
     return maxHP;
@@ -74,7 +85,7 @@ public class Player extends GameEntity {
   }
   
   public void incHP(int amt) {
-	  this.currHP += amt;
+	  this.currHP = Math.min(this.currHP + amt, this.maxHP);
   }
   
   public void decHP(int amt) {
@@ -159,5 +170,13 @@ public class Player extends GameEntity {
 
     public void setUsername(String username) {
         this.username = username;
+    }
+
+    public String getColor() {
+        return color;
+    }
+
+    public void setColor(String color) {
+        this.color = color;
     }
 }

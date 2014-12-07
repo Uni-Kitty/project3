@@ -17,8 +17,8 @@ public class GameRunner implements Runnable {
 	private static int arenaWidth;
 	private static int arenaHeight;
 	private static int hitDistance;
-	private static Player happyKitty = new Player("UNIKITTY", Player.HAPPY_KITTY, -99);
-	private static Player angryKitty = new Player("UNIKITTY", Player.ANGRY_KITTY, -100);
+	private static Player happyKitty = new Player("UNIKITTY", Player.HAPPY_KITTY, Main.getNextId());
+	private static Player angryKitty = new Player("UNIKITTY", Player.ANGRY_KITTY, Main.getNextId());
 	private static ObjectMapper mapper = new ObjectMapper();
 	private static Random randy = new Random();
 	private static String[] POSSIBLE_PRESENTS;
@@ -75,8 +75,8 @@ public class GameRunner implements Runnable {
                 		}
                 	}
                 	if ((step > 510 && step < 590) || (step > 1510 && step < 1590)) {// happy kitty is running across screen
-                		if (randy.nextInt(14) == 0) {  //chance of dropping present each step
-                			dropPresents(happyKitty.getxPos(), happyKitty.getyPos());
+                		if (randy.nextInt(12) == 0) {  //chance of dropping present each step
+                			dropPresents(happyKitty.getxPos() + randy.nextInt(40) - 20, happyKitty.getyPos());
                 		}
             		}
                 	if (step > 500 && step <= 600) {
@@ -115,15 +115,17 @@ public class GameRunner implements Runnable {
     
     private void angryKittyShoot() {
     	// angry kitty collision
-        for (Player p : game.getPlayers()) {
-    		float xDelta = Math.abs(angryKitty.getxPos() - p.getxPos());
-    		float yDelta = Math.abs(angryKitty.getyPos() - p.getyPos());
-    		if (hit(xDelta, yDelta)) {
-    			p.decHP(angryKitty.getatkDmg());
-    			if (p.getcurrHP() <= 0) {
-    				killPlayer(p, angryKitty);
-    			}
-    		}
+        synchronized(game) {
+            for (Player p : game.getPlayers()) {
+        		float xDelta = Math.abs(angryKitty.getxPos() - p.getxPos());
+        		float yDelta = Math.abs(angryKitty.getyPos() - p.getyPos());
+        		if (hit(xDelta, yDelta)) {
+        			p.decHP(angryKitty.getatkDmg());
+        			if (p.getcurrHP() <= 0) {
+        				killPlayer(p, angryKitty);
+        			}
+        		}
+            }
         }
         // TODO: shoot randomly
     }
@@ -237,12 +239,43 @@ public class GameRunner implements Runnable {
     }
     
     private void givePresent(Present pres, Player winner) {
-    	String presType = pres.getType();
-    	if (presType == "ammo") {
-    		winner.incAmmo(10);
-    	} else  if (presType == "health") {
-    		winner.incHP(6);
-    	} 
+        synchronized(winner) {
+        	String presType = pres.getType();
+        	int amount = 0;
+        	switch (presType) {
+        	case ("ammo"):
+        	    amount = randy.nextInt(20) - randy.nextInt(3);
+        	    winner.incAmmo(amount);
+        	    break;
+        	case ("health"):
+        	    amount = randy.nextInt(8) - randy.nextInt(3);
+        	    winner.incHP(amount);
+        	    break;
+        	case ("max_hp"):
+        	    amount = randy.nextInt(8) - randy.nextInt(3);
+        	    winner.incMaxHP(amount);
+        	    break;
+        	case ("dmg"):
+        	    amount = randy.nextInt(4) - randy.nextInt(2);
+        	    winner.incDmg(amount);
+        	    break;
+        	}
+        	String text = "";
+        	if (amount >= 0)
+        	    text += "+";
+        	text += amount;
+        	text += " " + presType;
+        	Message<TextDisplay> msg = new Message<TextDisplay>();
+        	msg.setType("text_display");
+        	msg.setId(pres.getId());
+        	msg.setData(new TextDisplay(text, 2000, Math.round(winner.getxPos()), Math.round(winner.getyPos())));
+        	try {
+        	    Main.sendMessageToPlayer(winner.getId(), mapper.writeValueAsString(msg));        	    
+        	}
+        	catch (Exception e) {
+        	    e.printStackTrace();
+        	}
+        }
     }
 
     private boolean hit(float xDelta, float yDelta) {

@@ -35,7 +35,7 @@ public class Main {
     public static final int CELL_SIZE = 5;
     public static final int HIT_DISTANCE = 20;
     public static final int PING_BUFFER_SIZE = 5;
-	private static final String[] POSSIBLE_PRESENTS = {"ammo", "health"};
+	private static final String[] POSSIBLE_PRESENTS = {"ammo", "health", "max_hp", "dmg", "ammo", "ammo", "health", "health"};
     
 	private static Game game = new Game(); // the state of the game
 	private static ConcurrentMap<Integer, Player> playersInGame = new ConcurrentHashMap<Integer, Player>();
