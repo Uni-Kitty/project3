@@ -50,7 +50,7 @@ $(function() {
     var leftKey = 65;
     var STAGE_WIDTH = 800;
     var STAGE_HEIGHT = 600;
-	  var WALL_COL_DIST = 10;
+	var WALL_COL_DIST = 10;
     var UPPER_LEFT_WALL_X = (STAGE_WIDTH / 4) - 10;
     var UPPER_LEFT_WALL_Y = (STAGE_HEIGHT / 4) + 10;
     var LOWER_LEFT_WALL_X = (STAGE_WIDTH / 4) - 10;
@@ -75,11 +75,14 @@ $(function() {
     var maxHP = $("#maxHP");
     var atkDmg = $("#atkDmg");
     var ammo = $("#ammo");
+    var update = {};
+    var ws;
+    var rttTable = $("#rttTable");
     
-    var assetsToLoader = [wizardImg, rangerImg, fireballImg, arrowImg, wallImg, presentImg0, presentImg1, presentImg2, presentImg3];
-    var loader = new PIXI.AssetLoader(assetsToLoader);
-    loader.onComplete = assetsLoaded;
-    loader.load();
+    // var assetsToLoader = [fireballImg, arrowImg, greenSquareImg];
+    // var loader = new PIXI.AssetLoader(assetsToLoader);
+    // loader.onComplete = assetsLoaded;
+    // loader.load();
     
     var stage = new PIXI.Stage(0xFFFFFF);
     stage.interactive = true;
@@ -92,7 +95,100 @@ $(function() {
         renderer.render(stage);
     }
     
-    function assetsLoaded() {
+    // Creates and adds element to stage, returns reference to the element
+    function addElementToStage(image, x, y, rotation) {
+        var sprite;
+        switch (image) {
+        case WIZARD:
+            sprite = new PIXI.Sprite.fromImage(wizardImg);
+            break;
+        case RANGER:
+            sprite = new PIXI.Sprite.fromImage(rangerImg);
+            break;
+        case FIREBALL:
+            sprite = new PIXI.Sprite.fromImage(fireballImg);
+            break;
+        case ARROW:
+            sprite = new PIXI.Sprite.fromImage(arrowImg);
+            break;
+        case WALL:
+            sprite = new PIXI.Sprite.fromImage(wallImg);
+            break;
+        case PRESENT0:
+            sprite = new PIXI.Sprite.fromImage(presentImg0);
+            break;
+        case PRESENT1:
+            sprite = new PIXI.Sprite.fromImage(presentImg1);
+            break;
+        case PRESENT2:
+            sprite = new PIXI.Sprite.fromImage(presentImg2);
+            break;
+        case PRESENT3:
+            sprite = new PIXI.Sprite.fromImage(presentImg3);
+            break;
+        case HAPPY_KITTY:
+            sprite = new PIXI.Sprite.fromImage(happyKittyImg);
+            break;
+        case ANGRY_KITTY:
+            sprite = new PIXI.Sprite.fromImage(angryKittyImg);
+            break;
+        }
+        sprite.anchor.x = 0.5;
+        sprite.anchor.y = 0.5;
+        sprite.position.x = Math.round(x);
+        sprite.position.y = Math.round(y);
+        sprite.rotation = rotation;
+        stage.addChild(sprite);
+        return sprite;
+    }
+    
+    function startGame(name, type) {
+        $('#charSelector').remove();
+        var msg = {};
+        msg.type = JOIN_GAME;
+        msg.id = userid;
+        msg.data = {};
+        msg.data.type = type;
+        msg.data.id = userid;
+        msg.data.username = name;
+        ws.send(JSON.stringify(msg));
+    }
+    
+    function joinGameSequence() {
+        $('body').append('<div id="charSelector"></div>');
+        $("#charSelector").append("<p>CHOOSE YOUR NAME</p>");
+        $("#charSelector").append("<input type='text' maxlength='8' id='nameBox' value='" + name + "'></input>");
+        $("#charSelector").append("<button id='okGoButton'>OK</Button>");
+        $("#okGoButton").click(function() {
+            name = $("#nameBox").val();
+            if (name != "") {
+                $("#charSelector").empty();
+                $("#charSelector").append("<p>SELECT YOUR HERO</p>");
+                $("#charSelector").append("<img src='img/wizard-lg.png' id='wizardButton' />");
+                $("#charSelector").append("<img src='img/ranger-lg.png' id='rangerButton' />");
+                $("#wizardButton").click(function() {
+                    startGame(name, WIZARD);
+                })
+                $("#rangerButton").click(function() {
+                    startGame(name, RANGER);
+                })
+            }
+        });
+    }
+    
+    function youHaveDied(message) {
+        stage.removeChild(player);
+        player = createNewPlayer();
+        $('body').append('<div id="charSelector"></div>');
+        $("#charSelector").append("<p>" + message + "</p>");
+        $("#charSelector").append("<button id='okDiedButton'>OK</Button>");
+        $("#okDiedButton").click(function() {
+            $('#charSelector').remove();
+            joinGameSequence();
+        });
+    }
+    
+    // function assetsLoaded() {
     	  
         // Upper left
         game.walls[0] = (addElementToStage(WALL, UPPER_LEFT_WALL_X, UPPER_LEFT_WALL_Y, -Math.PI / 4));
@@ -103,103 +199,10 @@ $(function() {
         // Lower right
         game.walls[3] = (addElementToStage(WALL, LOWER_RIGHT_WALL_X, LOWER_RIGHT_WALL_Y, -Math.PI / 4));
         
-        // Creates and adds element to stage, returns reference to the element
-        function addElementToStage(image, x, y, rotation) {
-            var sprite;
-            switch (image) {
-            case WIZARD:
-                sprite = PIXI.Sprite.fromImage(wizardImg);
-                break;
-            case RANGER:
-                sprite = PIXI.Sprite.fromImage(rangerImg);
-                break;
-            case FIREBALL:
-                sprite = PIXI.Sprite.fromImage(fireballImg);
-                break;
-            case ARROW:
-                sprite = PIXI.Sprite.fromImage(arrowImg);
-                break;
-            case WALL:
-                sprite = PIXI.Sprite.fromImage(wallImg);
-                break;
-            case PRESENT0:
-                sprite = PIXI.Sprite.fromImage(presentImg0);
-                break;
-            case PRESENT1:
-                sprite = PIXI.Sprite.fromImage(presentImg1);
-                break;
-            case PRESENT2:
-                sprite = PIXI.Sprite.fromImage(presentImg2);
-                break;
-            case PRESENT3:
-                sprite = PIXI.Sprite.fromImage(presentImg3);
-                break;
-            case HAPPY_KITTY:
-            	sprite = PIXI.Sprite.fromImage(happyKittyImg);
-            	break;
-            case ANGRY_KITTY:
-            	sprite = PIXI.Sprite.fromImage(angryKittyImg);
-            	break;
-            }
-            sprite.anchor.x = 0.5;
-            sprite.anchor.y = 0.5;
-            sprite.position.x = x;
-            sprite.position.y = y;
-            sprite.rotation = rotation;
-            stage.addChild(sprite);
-            return sprite;
-        }
-        
         var serverAddress = "ws://54.69.151.4:9999/";
         if (document.location.hostname == "localhost")
             serverAddress = "ws://127.0.0.1:9999/";
-        var ws = new WebSocket(serverAddress);
-        
-        function startGame(name, type) {
-            $('#charSelector').remove();
-            var msg = {};
-            msg.type = JOIN_GAME;
-            msg.id = userid;
-            msg.data = {};
-            msg.data.type = type;
-            msg.data.id = userid;
-            msg.data.username = name;
-            ws.send(JSON.stringify(msg));
-        }
-        
-        function joinGameSequence() {
-            $('body').append('<div id="charSelector"></div>');
-            $("#charSelector").append("<p>CHOOSE YOUR NAME</p>");
-            $("#charSelector").append("<input type='text' maxlength='8' id='nameBox' value='" + name + "'></input>");
-            $("#charSelector").append("<button id='okGoButton'>OK</Button>");
-            $("#okGoButton").click(function() {
-                name = $("#nameBox").val();
-                if (name != "") {
-                    $("#charSelector").empty();
-                    $("#charSelector").append("<p>SELECT YOUR HERO</p>");
-                    $("#charSelector").append("<img src='img/wizard-lg.png' id='wizardButton' />");
-                    $("#charSelector").append("<img src='img/ranger-lg.png' id='rangerButton' />");
-                    $("#wizardButton").click(function() {
-                        startGame(name, WIZARD);
-                    })
-                    $("#rangerButton").click(function() {
-                        startGame(name, RANGER);
-                    })
-                }
-            });
-        }
-        
-        function youHaveDied(message) {
-        	stage.removeChild(player);
-        	player = createNewPlayer();
-            $('body').append('<div id="charSelector"></div>');
-            $("#charSelector").append("<p>" + message + "</p>");
-            $("#charSelector").append("<button id='okDiedButton'>OK</Button>");
-            $("#okDiedButton").click(function() {
-                $('#charSelector').remove();
-                joinGameSequence();
-            });
-        }
+        ws = new WebSocket(serverAddress);
         
         ws.onopen = function() {
             console.log("socket opened");
@@ -235,95 +238,7 @@ $(function() {
                 if (i % 100 == 1) {
                     console.log(message.data);
                 }
-                var data = message.data;
-                var playerIDs = []; // track IDs that are no longer in game
-                var attackIDs = [];
-                var presentIDs = [];
-                for (id in game.players) {
-                    playerIDs.push(id);
-                }
-                for (id in game.attacks) {
-                    attackIDs.push(id);
-                }
-                for (id in game.presents) {
-                    presentIDs.push(id);
-                }
-                data.players.forEach(function(p) {
-                    var id = p.id;
-                    if (id == userid) {
-                        // update my own stats here
-                        currHP.text(p.currHP);
-                        maxHP.text(p.maxHP);
-                        ammo.text(p.ammo);
-                        atkDmg.text(p.atkDmg);
-                        classBox.text(p.type);
-                        pingNum.text(p.rtt);
-                        if (i == 20)
-                            console.log(p);
-                        player.currHP = p.currHP;
-                        player.maxHP = p.maxHP;
-                        updateHealthBarWidth(player);
-                    }
-                    else if (game.players[id] == null) {
-                        game.players[id] = addElementToStage(p.type, p.xPos, p.yPos, 0);
-                        addNameToPlayer(game.players[id], p.username);
-                        game.players[id].currHP = p.currHP;
-                        game.players[id].maxHP = p.maxHP;
-                        updateHealthBarWidth(game.players[id]);
-                    }
-                    else {
-                        if (game.players[id].position.x > p.xPos) {
-                            game.players[id].scale.x = 1;
-                            game.players[id].text.scale.x = 1;
-                        }
-                        else if (game.players[id].position.x < p.xPos) {
-                            game.players[id].scale.x = -1;
-                            game.players[id].text.scale.x = -1;
-                        }
-                        game.players[id].position.x = p.xPos;
-                        game.players[id].position.y = p.yPos;
-                        game.players[id].currHP = p.currHP;
-                        game.players[id].maxHP = p.maxHP;
-                        updateHealthBarWidth(game.players[id]);
-                        playerIDs.pop(id);
-                    }
-                });
-                data.attacks.forEach(function(attack) {
-                    //console.log(attack);
-                    var id = attack.id;
-                    if (game.attacks[id] == null) {
-                        game.attacks[id] = addElementToStage(attack.type, attack.xPos, attack.yPos, attack.rotation);
-                    }
-                    else {
-                        game.attacks[id].position.x = attack.xPos;
-                        game.attacks[id].position.y = attack.yPos;
-                        attackIDs.pop(id);
-                    }
-                });
-                data.presents.forEach(function(present) {
-                    var id = present.id;
-                    if (game.presents[id] == null) {
-                        game.presents[id] = addElementToStage(PRESENT + present.imageNum, present.xPos, present.yPos, 0);
-                    }
-                    else {
-                        game.presents[id].position.x = present.xPos;
-                        game.presents[id].position.y = present.yPos;
-                        presentIDs.pop(id);
-                    }
-                });
-                // remove attacks and players that have left the game
-                playerIDs.forEach(function(id) {
-                    stage.removeChild(game.players[id]);
-                    delete game.players[id];
-                });
-                attackIDs.forEach(function(id) {
-                    stage.removeChild(game.attacks[id]);
-                    delete game.attacks[id];
-                });
-                presentIDs.forEach(function(id) {
-                    stage.removeChild(game.presents[id]);
-                    delete game.presents[id];
-                });
+                update = message.data;
                 break;
             default:
                 console.log("unknown message type:");
@@ -491,6 +406,7 @@ $(function() {
                 message.data = playerInfo;
                 ws.send(JSON.stringify(message));
             }
+            updateView();
         }, 20);
         
         $(document).keydown(function(event) {
@@ -513,6 +429,96 @@ $(function() {
                 break;
             }
         });
+    // }
+    
+    function updateView() {
+        if (update == {})
+            return;
+        var data = update;
+        var currTime = new Date().getTime();
+        rttTable.html("<tr><th></th><th>Player</th><th>RTT</th></tr>");
+        data.players.forEach(function(p) {
+            rttTable.append(createTableEntry(p));
+            var id = p.id;
+            if (id == userid) {
+                // update my own stats here
+                currHP.text(p.currHP);
+                maxHP.text(p.maxHP);
+                ammo.text(p.ammo);
+                atkDmg.text(p.atkDmg);
+                classBox.text(p.type);
+                pingNum.text(p.rtt);
+                player.currHP = p.currHP;
+                player.maxHP = p.maxHP;
+                updateHealthBarWidth(player);
+            }
+            else if (game.players[id] == null) {
+                // add new player
+                game.players[id] = addElementToStage(p.type, p.xPos, p.yPos, 0);
+                addNameToPlayer(game.players[id], p.username);
+                game.players[id].currHP = p.currHP;
+                game.players[id].maxHP = p.maxHP;
+                updateHealthBarWidth(game.players[id]);
+                game.players[id].lastUpdate = currTime;
+            }
+            else {
+                if (game.players[id].position.x > p.xPos) {
+                    game.players[id].scale.x = 1;
+                    game.players[id].text.scale.x = 1;
+                }
+                else if (game.players[id].position.x < p.xPos) {
+                    game.players[id].scale.x = -1;
+                    game.players[id].text.scale.x = -1;
+                }
+                game.players[id].position.x = Math.round(p.xPos);
+                game.players[id].position.y = Math.round(p.yPos);
+                game.players[id].currHP = p.currHP;
+                game.players[id].maxHP = p.maxHP;
+                updateHealthBarWidth(game.players[id]);
+                game.players[id].lastUpdate = currTime;
+            }
+        });
+        data.attacks.forEach(function(attack) {
+            var id = attack.id;
+            if (game.attacks[id] == null) {
+                game.attacks[id] = addElementToStage(attack.type, attack.xPos, attack.yPos, attack.rotation);
+                game.attacks[id].lastUpdate = currTime;
+            }
+            else {
+                game.attacks[id].position.x = Math.round(attack.xPos);
+                game.attacks[id].position.y = Math.round(attack.yPos);
+                game.attacks[id].lastUpdate = currTime;
+            }
+        });
+        data.presents.forEach(function(present) {
+            var id = present.id;
+            if (game.presents[id] == null) {
+                game.presents[id] = addElementToStage(PRESENT + present.imageNum, present.xPos, present.yPos, 0);
+                game.presents[id].lastUpdate = currTime;
+            }
+            else {
+                game.presents[id].lastUpdate = currTime;
+            }
+        });
+        // remove elements no longer in game
+        for (var id in game.players) {
+            if (game.players[id].lastUpdate != currTime) {
+                stage.removeChild(game.players[id]);
+                delete game.players[id];
+            }
+        }
+        for (var id in game.attacks) {
+            if (game.attacks[id].lastUpdate != currTime) {
+                stage.removeChild(game.attacks[id]);
+                delete game.attacks[id];
+            }
+        }
+        for (var id in game.presents) {
+            if (game.presents[id].lastUpdate != currTime) {
+                stage.removeChild(game.presents[id]);
+                delete game.presents[id];
+            }
+        }
     }
     
     function updateHealthBarWidth(player) {
@@ -525,7 +531,7 @@ $(function() {
         player.text = new PIXI.Text(name, PLAYER_NAME_FONT);
         player.healthBar = PIXI.Sprite.fromImage(greenSquareImg);
         player.healthBar.anchor.x = 0.5;
-        player.healthBar.anchor.y = -1.5;
+        player.healthBar.anchor.y = -1.3;
         player.healthBar.height = 14;
         player.healthBar.width = 80;
         player.addChild(player.healthBar);
@@ -538,5 +544,11 @@ $(function() {
     	var p = {};
     	p.spectating = true;
     	return p;
+    }
+    
+    // create text for table entry
+    function createTableEntry(player) {
+        var result = "<tr><td><img src='" + greenSquareImg + "' /></td><td>" + player.username + "</td><td>" + player.rtt + "</td></tr>"; // TODO: add color square
+        return result;
     }
 });

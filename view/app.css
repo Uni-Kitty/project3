@@ -26,10 +26,11 @@ h1 {
 
 #jumbotron, #statBox {
 	display: inline-block;
-    height: 600px;
+    height: 590px;
     color: #00FF26;
     width: 200px;
     border: 1px solid #00FF26;
+    padding: 4px;
 }
 
 #statBox {
@@ -38,6 +39,11 @@ h1 {
 
 #jumbotron {
 
+}
+
+#jumbotron th, #jumbotron td {
+	padding: 4px;
+	text-align: left;
 }
 
 #statBox p {

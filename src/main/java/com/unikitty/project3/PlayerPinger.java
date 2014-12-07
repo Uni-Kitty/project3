@@ -1,6 +1,5 @@
 package com.unikitty.project3;
 
-import java.util.HashSet;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.codehaus.jackson.map.ObjectMapper;
@@ -26,35 +25,15 @@ public class PlayerPinger implements Runnable {
     public void recordPing(int id, long time) {
         time = System.currentTimeMillis() - time;
         if (playerPings.containsKey(id)) {
-            playerPings.get(id).add(time);
+            // playerPings.get(id).add(time);
+            Main.recordTime(id, time);
         }
-    }
-    
-    private void recordAverages() {
-        HashSet<Integer> inactiveIDS = new HashSet<Integer>();
-        for (int id : playerPings.keySet()) {
-            if (!Main.isPlayerActive(id)) {
-                inactiveIDS.add(id);
-            }
-            else if (!playerPings.get(id).isEmpty()) {
-                long sum = 0;
-                long count = 0;
-                for (long time : playerPings.get(id)) {
-                    sum += time;
-                    count++;
-                }
-                Main.recordTime(id, sum / count);
-            }
-        }
-        for (int id : inactiveIDS)
-            playerPings.remove(id);
     }
     
     public void run() {
         while (true) {
             try {
                 Thread.sleep(PING_DELAY);
-                recordAverages();
                 Message<Long> msg = new Message<Long>();
                 msg.setType(PING);
                 msg.setData(System.currentTimeMillis());
