@@ -38,7 +38,7 @@ public class PlayerPinger implements Runnable {
             }
             else if (!playerPings.get(id).isEmpty()) {
                 long sum = 0;
-                int count = 0;
+                long count = 0;
                 for (long time : playerPings.get(id)) {
                     sum += time;
                     count++;
