@@ -7,7 +7,7 @@ import org.codehaus.jackson.map.ObjectMapper;
 public class PlayerPinger implements Runnable {
     
     public static final int BUFFER_SIZE = 10;
-    public static final long PING_DELAY = 1000;
+    public static final long PING_DELAY = 15000;
     public static final String PING = "ping";
     
     private static ObjectMapper mapper = new ObjectMapper();
