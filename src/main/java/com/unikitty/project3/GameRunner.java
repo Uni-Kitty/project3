@@ -67,6 +67,8 @@ public class GameRunner implements Runnable {
         while (true) {
             try {
                 step++;
+                long timeSum = 0; // track average loop time
+                long time = System.nanoTime();
             	synchronized (game) {
             		// update attacks
                 	Iterator<Attack> it = game.getAttacks().iterator();
@@ -129,6 +131,12 @@ public class GameRunner implements Runnable {
                 			itGraves.remove();
                 		}
                 	}
+            	}
+            	timeSum += System.nanoTime() - time;
+            	if (step == 0) { // periodically log some performance info
+            	    long avgTime = timeSum / 2100;
+            	    System.out.println("Game loop avg time: " + avgTime + " ns with " + game.getPlayers().size() + " active players");
+            	    timeSum = 0;
             	}
                 Thread.sleep(broadcastDelay);
             }
