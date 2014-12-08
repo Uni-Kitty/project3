@@ -76,7 +76,7 @@ $(function() {
     var maxHP = $("#maxHP");
     var atkDmg = $("#atkDmg");
     var ammo = $("#ammo");
-    var update = {};
+    var update = false;
     var ws;
     var rttTable = $("#rttTable");
     
@@ -412,8 +412,8 @@ $(function() {
                 message.id = userid;
                 message.data = playerInfo;
                 ws.send(JSON.stringify(message));
+                updateView();
             }
-            updateView();
         }, 20);
         
         $(document).keydown(function(event) {
