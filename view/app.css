@@ -99,3 +99,11 @@ h1 {
     overflow-x: hidden;
     padding-right: 25px;
 }
+
+#jumbotron p {
+	float: left;
+	clear: both;
+	margin: 1px;
+	padding: 0;
+    white-space: nowrap;
+}

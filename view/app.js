@@ -270,7 +270,7 @@ $(function() {
             	game.textDisplays.push(text);
             	break;
             case ("chat"):
-            	jumbotron.append(message.data + "\n");
+            	jumbotron.append("<p>" + message.data + "</p>");
             	break;
             default:
                 console.log("unknown message type:");
