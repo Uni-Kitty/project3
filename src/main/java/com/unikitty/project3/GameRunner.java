@@ -73,8 +73,8 @@ public class GameRunner implements Runnable {
                 		}
                 	}
                 	if ((step > 510 && step < 590) || (step > 1510 && step < 1590)) {// happy kitty is running across screen
-                		if (randy.nextInt(12) == 0) {  //chance of dropping present each step
-                			dropPresents(happyKitty.getxPos() + randy.nextInt(40) - 20, happyKitty.getyPos());
+                		if (randy.nextInt(9) == 0) {  //chance of dropping present each step
+                			dropPresents(happyKitty.getxPos() + randy.nextInt(80) - 40, happyKitty.getyPos());
                 		}
             		}
                 	if ((step > 1000 && step < 1100) || (step > 2000 && step < 2100)) {

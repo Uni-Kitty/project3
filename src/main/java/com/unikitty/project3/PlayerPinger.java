@@ -36,6 +36,7 @@ public class PlayerPinger implements Runnable {
                 Thread.sleep(PING_DELAY);
                 Message<Long> msg = new Message<Long>();
                 msg.setType(PING);
+                msg.setData(System.currentTimeMillis());
                 String message = mapper.writeValueAsString(msg);
                 for (int id : ids)
                     Main.sendMessageToPlayer(id, message);

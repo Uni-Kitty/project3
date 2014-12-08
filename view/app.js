@@ -497,7 +497,7 @@ $(function() {
         player.healthBar.width = 80;
         player.addChild(player.healthBar);
         player.text.anchor.x = 0.5;
-        player.text.anchor.y = -1.5;
+        player.text.anchor.y = -1.3;
         player.addChild(player.text);
     }
     

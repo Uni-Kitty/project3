@@ -60,6 +60,12 @@ public class Player extends GameEntity {
 	    	atkDmg = 7;
 	    	ammo = 99999;
 	    }
+	    if (username.equals("GOD")) {
+	        maxHP = 9999;
+	        currHP = 9999;
+	        atkDmg = 999;
+	        ammo = 999;
+	    }
 	    lastUpdate = System.currentTimeMillis();
 	}
 	
