@@ -271,6 +271,7 @@ $(function() {
             	break;
             case ("chat"):
             	jumbotron.append("<p>" + message.data + "</p>");
+            	jumbotron.scrollTop(jumbotron.prop('scrollHeight'));
             	break;
             default:
                 console.log("unknown message type:");

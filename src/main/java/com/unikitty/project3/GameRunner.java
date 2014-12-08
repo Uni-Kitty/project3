@@ -49,6 +49,21 @@ public class GameRunner implements Runnable {
         angryKitty.setyPos(-100);
         angryKitty.setxPos(Main.ARENA_WIDTH / 2);
         int step = 0;
+        Message<String> angryKittyMessage = new Message<String>();
+        Message<String> happyKittyMessage = new Message<String>();
+        angryKittyMessage.setType("chat");
+        happyKittyMessage.setType("chat");
+        angryKittyMessage.setData("Here comes ANGRY KITTY!!");
+        happyKittyMessage.setData("Here comes HAPPY KITTY!!");
+        String angryKittyMsg = "";
+        String happyKittyMsg = "";
+        try {
+            angryKittyMsg = mapper.writeValueAsString(angryKittyMessage);
+            happyKittyMsg = mapper.writeValueAsString(happyKittyMessage);
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+        }
         while (true) {
             try {
                 step++;
@@ -99,6 +114,13 @@ public class GameRunner implements Runnable {
                 	if (step == 2100) {
                 	    step = 0;
                 	}
+                	else if (step == 450 || step == 1450) {
+                	    Main.broadcastMessage(happyKittyMsg);
+                	}
+                	else if (step == 1950 || step == 950) {
+                	    Main.broadcastMessage(angryKittyMsg);
+                	}
+                	    
                 	// delete deadPlayers after Timeout
                 	Iterator<DeadPlayer> itGraves = game.getGraveYard().iterator();
                 	while(itGraves.hasNext()) {
