@@ -1,5 +1,6 @@
 package com.unikitty.project3;
 
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Random;
 import java.util.Set;
@@ -119,16 +120,20 @@ public class GameRunner implements Runnable {
     	synchronized(game) {
         	// TODO: do we need a synch (game) here since the outer method has one?
             // detect collisions
+    	    Set<Player> deadPlayers = new HashSet<Player>();
         	for (Player p : game.getPlayers()) {
         		float xDelta = Math.abs(angryKitty.getxPos() - p.getxPos());
         		float yDelta = Math.abs(angryKitty.getyPos() - p.getyPos());
         		if (hit(xDelta, yDelta)) {
         			p.decHP(angryKitty.getatkDmg());
         			if (p.getcurrHP() <= 0) {
-        				killPlayer(p, angryKitty);
+        				deadPlayers.add(p);
         			}
         		}
             }
+        	for (Player p : deadPlayers) {
+        	    killPlayer(p, angryKitty);
+        	}
     	}
     }
     

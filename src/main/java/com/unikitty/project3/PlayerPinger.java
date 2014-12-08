@@ -23,7 +23,10 @@ public class PlayerPinger implements Runnable {
     }
     
     public void recordPing(int id, long time) {
+        System.out.println("Received ping, time: " + time);
         time = System.currentTimeMillis() - time;
+        System.out.println("Current time :       " + System.currentTimeMillis());
+        System.out.println("diff :               " + time);
         if (playerPings.containsKey(id)) {
             // playerPings.get(id).add(time);
             Main.recordTime(id, time);
@@ -37,6 +40,7 @@ public class PlayerPinger implements Runnable {
                 Message<Long> msg = new Message<Long>();
                 msg.setType(PING);
                 msg.setData(System.currentTimeMillis());
+                System.out.println("sending ping " + msg.getData().toString());
                 String message = mapper.writeValueAsString(msg);
                 for (int id : playerPings.keySet())
                     Main.sendMessageToPlayer(id, message);
