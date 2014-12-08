@@ -331,10 +331,19 @@ public class GameRunner implements Runnable {
     }
     
     private void killPlayer(Player killed, Player killer) {
+        sendDeadMessage(killed.getId(), "YOU WERE KILLED BY " + killer.getUsername());
+        Message<String> msg = new Message<String>();
+        msg.setType("chat");
+        msg.setData(killer.getUsername() + " killed " + killed.getUsername());
+        try {
+            Main.broadcastMessage(mapper.writeValueAsString(msg));
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+        }
         playersInGame.remove(killed.getId());
         game.removePlayer(killed);
         game.buildGrave(new DeadPlayer(killed));
-        sendDeadMessage(killed.getId(), "YOU WERE KILLED BY " + killer.getUsername());
     }
 }
 

@@ -30,6 +30,7 @@ public class Main {
     public static final String JOIN_GAME = "join_game";
     public static final String PLAYER_UPDATE = "player_update";
     public static final String PLAYER_JOINED = "player_joined";
+    public static final String CHAT = "chat";
     public static final int ARENA_WIDTH = 800;
     public static final int ARENA_HEIGHT = 600;
     public static final int CELL_SIZE = 5;
@@ -145,12 +146,20 @@ public class Main {
 	                	System.out.println("Player " + newPlayer.getUsername() + " joined");
 	                	playerSessions.get(m3.getId()).getRemote().sendString(mapper.writeValueAsString(m3));
 	                	break;
+	                case (CHAT):
+	                    
                 }
             }
             catch (Exception e) {
                 e.printStackTrace();
                 System.out.println(message);
             }
+        }
+    }
+    
+    public static void broadcastMessage(String message) {
+        for (int playerId : playerSessions.keySet()) {
+            sendMessageToPlayer(playerId, message);
         }
     }
     

@@ -26,6 +26,7 @@ $(function() {
     var PRESENT1 = "present1";
     var PRESENT2 = "present2";
     var PRESENT3 = "present3";
+    var TOMBSTONE = "tombstone";
     // images
     var fireballImg = "img/fireball-sm.png";
     var arrowImg = "img/arrow-sm.png";
@@ -38,6 +39,7 @@ $(function() {
     var happyKittyImg = "img/happyKitty-sm.png";
     var angryKittyImg = "img/angryKitty-sm.png";
     var laserBallImg = "img/laser-ball.png";
+    var tombstoneImg = "img/tombstone-sm.png";
     var PLAYER_NAME_FONT = {font:"14px Courier"};
     var userid = 0;
     var MAX_SPEED = 6;
@@ -71,6 +73,7 @@ $(function() {
     game.attacks = {}; // map id->attack
     game.presents = {}; // map id->present
     game.walls = {}; // map id->wall
+    game.graveYard = [];
     game.textDisplays = []; // array of text displays
     // text areas
     var pingNum = $("#pingNum");
@@ -79,10 +82,11 @@ $(function() {
     var maxHP = $("#maxHP");
     var atkDmg = $("#atkDmg");
     var ammo = $("#ammo");
-    var hits = $("#hits");
+    var kills = $("#kills");
     var update = false;
     var ws;
     var rttTable = $("#rttTable");
+    var jumbotron = $("#jumbotron");
     
     // var assetsToLoader = [fireballImg, arrowImg, greenSquareImg];
     // var loader = new PIXI.AssetLoader(assetsToLoader);
@@ -113,8 +117,6 @@ $(function() {
         case RANGER:
             var texture = new PIXI.Texture.fromImage("img/ranger-" + color + ".png");
             sprite = new PIXI.Sprite(texture);
-            // sprite.height = PLAYER_HEIGHT;
-            // sprite.width = PLAYER_WIDTH;
             break;
         case FIREBALL:
             sprite = new PIXI.Sprite.fromImage(fireballImg);
@@ -145,6 +147,9 @@ $(function() {
             break;
         case LASER_BALL:
         	sprite = new PIXI.Sprite.fromImage(laserBallImg);
+        	break;
+        case TOMBSTONE:
+        	sprite = new PIXI.Sprite.fromImage(tombstoneImg);
         	break;
         }
         sprite.anchor.x = 0.5;
@@ -235,6 +240,7 @@ $(function() {
             	youHaveDied(message.data);
             	break;
             case (PING):
+            	// console.log(message);
                 ws.send(JSON.stringify(message));
                 break;
             case (PLAYER_JOINED):
@@ -262,6 +268,9 @@ $(function() {
             	text.scale.x = player.scale.x;
             	player.addChild(text);
             	game.textDisplays.push(text);
+            	break;
+            case ("chat"):
+            	jumbotron.append(message.data + "\n");
             	break;
             default:
                 console.log("unknown message type:");
@@ -348,8 +357,8 @@ $(function() {
                 message.id = userid;
                 message.data = playerInfo;
                 ws.send(JSON.stringify(message));
-                updateView();
             }
+            updateView();
         }, 20);
         
         $(document).keydown(function(event) {
@@ -375,14 +384,15 @@ $(function() {
     // }
     
     function updateView() {
-        if (update == {})
+        if (update.players == undefined)
             return;
         var data = update;
         var currTime = new Date().getTime();
-        rttTable.html("<tr><th></th><th>Player</th><th>RTT</th></tr>");
+        rttTable.html("<tr><th></th><th>Player</th><th>RTT</th><th>Kills</th></tr>");
+        data.players.sort(sortPlayers);
         data.players.forEach(function(p) {
             if (p.username != UNIKITTY)
-            rttTable.append(createTableEntry(p));
+            	rttTable.append(createTableEntry(p));
             var id = p.id;
             if (id == userid) {
                 // update my own stats here
@@ -391,7 +401,7 @@ $(function() {
                 ammo.text(p.ammo);
                 atkDmg.text(p.atkDmg);
                 classBox.text(p.type);
-                hits.text(p.hitCount);
+                kills.text(p.kills);
                 pingNum.text(p.rtt);
                 player.currHP = p.currHP;
                 player.maxHP = p.maxHP;
@@ -461,6 +471,16 @@ $(function() {
         		text.anchor.y += 0.075;
         	}
         }
+        data.graveYard.forEach(function(grave) {
+        	var id = grave.xPos + grave.yPos;
+        	if (game.graveYard[id] == null) {
+        		game.graveYard[id] = addElementToStage(TOMBSTONE, grave.xPos, grave.yPos, 0);
+        		game.graveYard[id].lastUpdate = currTime;
+        	}
+        	else {
+        		game.graveYard[id].lastUpdate = currTime;
+        	}
+        });
         // remove elements no longer in game
         for (var id in game.players) {
             if (game.players[id].lastUpdate != currTime) {
@@ -478,6 +498,12 @@ $(function() {
             if (game.presents[id].lastUpdate != currTime) {
                 stage.removeChild(game.presents[id]);
                 delete game.presents[id];
+            }
+        }
+        for (var id in game.graveYard) {
+            if (game.graveYard[id].lastUpdate != currTime) {
+                stage.removeChild(game.graveYard[id]);
+                delete game.graveYard[id];
             }
         }
     }
@@ -509,7 +535,7 @@ $(function() {
     
     // create text for table entry
     function createTableEntry(player) {
-        var result = "<tr><td><img src='img/square-" + player.color + ".png' /></td><td>" + player.username + "</td><td>" + player.rtt + "</td></tr>"; // TODO: add color square
+        var result = "<tr><td><img src='img/square-" + player.color + ".png' /></td><td>" + player.username + "</td><td>" + player.rtt + "</td><td>" + player.kills + "</td></tr>"; // TODO: add color square
         return result;
     }
 
@@ -582,5 +608,9 @@ $(function() {
 
     function hitWallGoingDown() {
         return checkWallNE(UPPER_LEFT_WALL_X,UPPER_LEFT_WALL_Y - 20) || checkWallNE(LOWER_RIGHT_WALL_X,LOWER_RIGHT_WALL_Y - 20) || checkWallNW(UPPER_RIGHT_WALL_X,UPPER_RIGHT_WALL_Y - 20) || checkWallNW(LOWER_LEFT_WALL_X,LOWER_LEFT_WALL_Y - 20)
+    }
+    
+    function sortPlayers(p1, p2) {
+    	return p2.kills - p1.kills;
     }
 });
