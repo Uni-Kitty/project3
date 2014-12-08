@@ -1,34 +1,31 @@
 package com.unikitty.project3;
 
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.HashSet;
+import java.util.Set;
 
 import org.codehaus.jackson.map.ObjectMapper;
 
 public class PlayerPinger implements Runnable {
     
     public static final int BUFFER_SIZE = 10;
-    public static final long PING_DELAY = 15000;
+    public static final long PING_DELAY = 1000;
     public static final String PING = "ping";
     
     private static ObjectMapper mapper = new ObjectMapper();
     
-    private ConcurrentHashMap<Integer, FixedSizeQueue<Long>> playerPings;
+    private Set<Integer> ids;
     
-    public PlayerPinger() {
-        playerPings = new ConcurrentHashMap<Integer, FixedSizeQueue<Long>>();
+    public PlayerPinger() {  
+        ids = new HashSet<Integer>();
     }
     
     public void addPlayer(int id) {
-        playerPings.put(id, new FixedSizeQueue<Long>(BUFFER_SIZE));
+        ids.add(id);
     }
     
     public void recordPing(int id, long time) {
-        System.out.println("Received ping, time: " + time);
         time = System.currentTimeMillis() - time;
-        System.out.println("Current time :       " + System.currentTimeMillis());
-        System.out.println("diff :               " + time);
-        if (playerPings.containsKey(id)) {
-            // playerPings.get(id).add(time);
+        if (ids.contains(id)) {
             Main.recordTime(id, time);
         }
     }
@@ -39,10 +36,8 @@ public class PlayerPinger implements Runnable {
                 Thread.sleep(PING_DELAY);
                 Message<Long> msg = new Message<Long>();
                 msg.setType(PING);
-                msg.setData(System.currentTimeMillis());
-                System.out.println("sending ping " + msg.getData().toString());
                 String message = mapper.writeValueAsString(msg);
-                for (int id : playerPings.keySet())
+                for (int id : ids)
                     Main.sendMessageToPlayer(id, message);
             }
             catch (Exception e) {

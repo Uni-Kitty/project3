@@ -308,17 +308,6 @@ $(function() {
             }
         }
         
-        // send ping requests
-        setInterval(function() {
-            if (userid != 0) { // has the welcome message arrived?
-                var message = {};
-                message.type = PING;
-                message.id = userid;
-                message.data = new Date().getTime();
-                ws.send(JSON.stringify(message));
-            }
-        }, 2000);
-        
 
         setInterval(function() {
             if (!player.spectating) {
