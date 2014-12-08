@@ -1,6 +1,10 @@
 package com.unikitty.project3;
 
+import java.util.concurrent.atomic.AtomicInteger;
+
 public class Player extends GameEntity {
+    
+    private static AtomicInteger nums = new AtomicInteger();
 	
   private int maxHP;
   private int currHP;
@@ -34,7 +38,7 @@ public class Player extends GameEntity {
 	    this.id = id;
 	    this.username = name;
 	    this.type = type;
-	    this.color = Color.COLORS[id % 7];
+	    this.color = Color.COLORS[nums.incrementAndGet() % 7];
 	    switch (type) {
 	    case (WIZARD):
 	        maxHP = 10;

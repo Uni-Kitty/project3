@@ -21,7 +21,6 @@ public class GameRunner implements Runnable {
 	private static Player angryKitty = new Player("UNIKITTY", Player.ANGRY_KITTY, Main.getNextId());
 	private static ObjectMapper mapper = new ObjectMapper();
 	private static Random randy = new Random();
-	private static String[] POSSIBLE_PRESENTS;
 	private static float[] ANGRY_ATTACK = {-10, 0, 10};
 	
 	private static final long PRES_TIMEOUT = 30000;
@@ -29,11 +28,9 @@ public class GameRunner implements Runnable {
 	private static final long GHOST_DELAY = 5000;
 	
 	public static final String YOU_HAVE_DIED = "you_have_died";
-	
-    
     
     public GameRunner(Game g, ConcurrentMap<Integer, Attack> attacks, 
-    		           ConcurrentMap<Integer, Player> players, long pTime, int bDel, int aW, int aH, int hD, String[] pp) {
+    		           ConcurrentMap<Integer, Player> players, long pTime, int bDel, int aW, int aH, int hD) {
         game = g;
         attacksInGame = attacks;
         playersInGame = players;
@@ -43,7 +40,6 @@ public class GameRunner implements Runnable {
         hitDistance = hD;
         game.addPlayer(happyKitty);
         game.addPlayer(angryKitty);
-        POSSIBLE_PRESENTS = pp;
     }
     
     public void run() {
@@ -81,7 +77,7 @@ public class GameRunner implements Runnable {
                 		}
             		}
                 	if ((step > 1000 && step < 1100) || (step > 2000 && step < 2100)) {
-                		if (randy.nextInt(8) == 0) {
+                		if (randy.nextInt(4) == 0) {
                 			angryKittyShoot();
                 		}
                 	}
@@ -144,7 +140,7 @@ public class GameRunner implements Runnable {
 	        float xVel = ANGRY_ATTACK[xIndex];
 	        float yVel = ANGRY_ATTACK[yIndex];
 	        Attack a = new Attack(angryKitty.getId(), Main.getNextId(), angryKitty.getxPos(), angryKitty.getyPos(), xVel, yVel, 100);
-	        a.setType("fireball");
+	        a.setType(Attack.LASER_BALL);
 	        if (xVel != 0 || yVel != 0) {
 	        	game.addAttack(a);
 	        	attacksInGame.put(a.getId(), a);
@@ -153,9 +149,8 @@ public class GameRunner implements Runnable {
     }
     
     private void dropPresents(float x, float y) {
-		int presentIndex = randy.nextInt(POSSIBLE_PRESENTS.length);
 		int imageNum = randy.nextInt(4);
-		Present gamePresent = new Present(x, y, POSSIBLE_PRESENTS[presentIndex],
+		Present gamePresent = new Present(x, y, PresentBuilder.getRandomPresent(),
 							System.currentTimeMillis(), imageNum);
 		gamePresent.setId(Main.getNextId());
 		game.addPresent(gamePresent);
@@ -273,24 +268,28 @@ public class GameRunner implements Runnable {
         	    amount = randy.nextInt(8) - randy.nextInt(3);
         	    winner.incHP(amount);
         	    break;
-        	case ("max_hp"):
+        	case ("max hp"):
         	    amount = randy.nextInt(8) - randy.nextInt(3);
         	    winner.incMaxHP(amount);
         	    break;
-        	case ("dmg"):
+        	case ("atk"):
         	    amount = randy.nextInt(4) - randy.nextInt(2);
         	    winner.incDmg(amount);
         	    break;
         	}
+        	String color = Color.GREEN;
         	String text = "";
         	if (amount >= 0)
         	    text += "+";
+        	else
+        	    color = Color.RED;
         	text += amount;
         	text += " " + presType;
         	Message<TextDisplay> msg = new Message<TextDisplay>();
         	msg.setType("text_display");
         	msg.setId(pres.getId());
         	msg.setData(new TextDisplay(text, 2000, Math.round(winner.getxPos()), Math.round(winner.getyPos())));
+        	msg.getData().setColor(color);
         	try {
         	    Main.sendMessageToPlayer(winner.getId(), mapper.writeValueAsString(msg));        	    
         	}
@@ -312,8 +311,12 @@ public class GameRunner implements Runnable {
 
     // handle attack a hitting player p
     private void registerAttack(Attack a, Player p) {
-    	Player attackOwner = playersInGame.get(a.getOwnerID());
-    	System.out.println(attackOwner);
+    	Player attackOwner;
+    	if (a.getOwnerID() == angryKitty.getId())
+    	    attackOwner = angryKitty;
+    	else
+    	    attackOwner = playersInGame.get(a.getOwnerID());
+    	// System.out.println(attackOwner);
     	p.decHP(attackOwner.getatkDmg());
     	attackOwner.incHitCount();
     	if (p.getcurrHP() <= 0) {

@@ -5,6 +5,7 @@ package com.unikitty.project3;
 public class TextDisplay {
     
     private String text;
+    private String color;
     private int duration;
     private int xPos;
     private int yPos;
@@ -41,6 +42,14 @@ public class TextDisplay {
     }
     public void setyPos(int yPos) {
         this.yPos = yPos;
+    }
+
+    public String getColor() {
+        return color;
+    }
+
+    public void setColor(String color) {
+        this.color = color;
     }
 
 }

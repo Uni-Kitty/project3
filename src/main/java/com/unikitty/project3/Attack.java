@@ -8,6 +8,7 @@ public class Attack extends GameEntity {
     
     public static final String FIREBALL = "fireball";
     public static final String ARROW = "arrow";
+    public static final String LASER_BALL = "laser_ball";
     
     public Attack() {}
 

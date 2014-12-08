@@ -3,8 +3,7 @@ package com.unikitty.project3;
 import java.util.Random;
 
 public class PresentBuilder implements Runnable {
-    
-	private static String[] POSSIBLE_PRESENTS;
+
 	private static final Random randy = new Random();
 	
 	private Game game;
@@ -12,11 +11,10 @@ public class PresentBuilder implements Runnable {
 	private int arenaHeight;
 	private static final int PRESENT_DELAY = 5000;
 	
-	public PresentBuilder(Game g, int width, int height, String[] presents) {
+	public PresentBuilder(Game g, int width, int height) {
 		game = g;
 		arenaWidth = width;
 		arenaHeight = height;
-		POSSIBLE_PRESENTS = presents;
 	}
 	
 	public void run() {
@@ -35,13 +33,24 @@ public class PresentBuilder implements Runnable {
 	}
 	
 	public void addPresent(float x, float y) {
-		int presentIndex = randy.nextInt(POSSIBLE_PRESENTS.length);
 		int imageNum = randy.nextInt(4);
-		Present gamePresent = new Present(x, y, POSSIBLE_PRESENTS[presentIndex],
-							System.currentTimeMillis(), imageNum);
+		Present gamePresent = new Present(x, y, getRandomPresent(), System.currentTimeMillis(), imageNum);
 		gamePresent.setId(Main.getNextId());
 		synchronized (game) {
 			game.addPresent(gamePresent);
 		}
+	}
+	
+	// get a random present, by using a bigger n we can control the chances of getting certain presents
+	public static String getRandomPresent() {
+	    int n = randy.nextInt(100);
+	    if (n < 40)
+	        return "ammo";
+	    else if (n < 80)
+	        return "health";
+	    else if (n < 90)
+	        return "atk";
+	    else
+	        return "max hp";
 	}
 }

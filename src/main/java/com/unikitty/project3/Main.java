@@ -35,7 +35,6 @@ public class Main {
     public static final int CELL_SIZE = 5;
     public static final int HIT_DISTANCE = 20;
     public static final int PING_BUFFER_SIZE = 5;
-	private static final String[] POSSIBLE_PRESENTS = {"ammo", "health", "max_hp", "dmg", "ammo", "ammo", "health", "health"};
     
 	private static Game game = new Game(); // the state of the game
 	private static ConcurrentMap<Integer, Player> playersInGame = new ConcurrentHashMap<Integer, Player>();
@@ -211,8 +210,8 @@ public class Main {
     }
     
     private static void startGame() {
-        new Thread(new PresentBuilder(game, ARENA_WIDTH, ARENA_HEIGHT, POSSIBLE_PRESENTS)).start();
-        new Thread(new GameRunner(game, attacksInGame, playersInGame, PLAYER_TIMEOUT, BROADCAST_DELAY, ARENA_WIDTH, ARENA_HEIGHT, HIT_DISTANCE, POSSIBLE_PRESENTS)).start();
+        new Thread(new PresentBuilder(game, ARENA_WIDTH, ARENA_HEIGHT)).start();
+        new Thread(new GameRunner(game, attacksInGame, playersInGame, PLAYER_TIMEOUT, BROADCAST_DELAY, ARENA_WIDTH, ARENA_HEIGHT, HIT_DISTANCE)).start();
         new Thread(playerPinger).start();
     }
     
