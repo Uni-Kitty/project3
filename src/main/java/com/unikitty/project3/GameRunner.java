@@ -22,6 +22,7 @@ public class GameRunner implements Runnable {
 	private static ObjectMapper mapper = new ObjectMapper();
 	private static Random randy = new Random();
 	private static String[] POSSIBLE_PRESENTS;
+	private static float[] ANGRY_ATTACK = {-10, 0, 10};
 	
 	private static final long PRES_TIMEOUT = 30000;
 	private static final float WALL_COL_DIST = 10;
@@ -79,19 +80,24 @@ public class GameRunner implements Runnable {
                 			dropPresents(happyKitty.getxPos() + randy.nextInt(40) - 20, happyKitty.getyPos());
                 		}
             		}
+                	if ((step > 1000 && step < 1100) || (step > 2000 && step < 2100)) {
+                		if (randy.nextInt(8) == 0) {
+                			angryKittyShoot();
+                		}
+                	}
                 	if (step > 500 && step <= 600) {
                 	    happyKitty.setxPos(happyKitty.getxPos() + 10);
                 	}
                     else if (step > 1000 && step <= 1100) {
                         angryKitty.setyPos(angryKitty.getyPos() + 10);
-                        angryKittyShoot();
+                        angryCollision();
                 	}
                 	else if (step > 1500 && step <= 1600) {
                         happyKitty.setxPos(happyKitty.getxPos() - 10);
                 	}
                     else if (step > 2000 && step <= 2100) {
                         angryKitty.setyPos(angryKitty.getyPos() - 10);
-                        angryKittyShoot();
+                        angryCollision();
                     }
                 	if (step == 2100) {
                 	    step = 0;
@@ -113,10 +119,11 @@ public class GameRunner implements Runnable {
         }
     }
     
-    private void angryKittyShoot() {
-    	// angry kitty collision
-        synchronized(game) {
-            for (Player p : game.getPlayers()) {
+    private void angryCollision() {
+    	synchronized(game) {
+        	// TODO: do we need a synch (game) here since the outer method has one?
+            // detect collisions
+        	for (Player p : game.getPlayers()) {
         		float xDelta = Math.abs(angryKitty.getxPos() - p.getxPos());
         		float yDelta = Math.abs(angryKitty.getyPos() - p.getyPos());
         		if (hit(xDelta, yDelta)) {
@@ -126,8 +133,23 @@ public class GameRunner implements Runnable {
         			}
         		}
             }
+    	}
+    }
+    
+    private void angryKittyShoot() {
+        synchronized(game) {
+            // shoot randomly
+	        int xIndex = randy.nextInt(ANGRY_ATTACK.length);
+	        int yIndex = randy.nextInt(ANGRY_ATTACK.length);
+	        float xVel = ANGRY_ATTACK[xIndex];
+	        float yVel = ANGRY_ATTACK[yIndex];
+	        Attack a = new Attack(angryKitty.getId(), Main.getNextId(), angryKitty.getxPos(), angryKitty.getyPos(), xVel, yVel, 100);
+	        a.setType("fireball");
+	        if (xVel != 0 || yVel != 0) {
+	        	game.addAttack(a);
+	        	attacksInGame.put(a.getId(), a);
+	        } 
         }
-        // TODO: shoot randomly
     }
     
     private void dropPresents(float x, float y) {
@@ -291,6 +313,7 @@ public class GameRunner implements Runnable {
     // handle attack a hitting player p
     private void registerAttack(Attack a, Player p) {
     	Player attackOwner = playersInGame.get(a.getOwnerID());
+    	System.out.println(attackOwner);
     	p.decHP(attackOwner.getatkDmg());
     	attackOwner.incHitCount();
     	if (p.getcurrHP() <= 0) {
