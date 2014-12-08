@@ -122,14 +122,16 @@ public class GameRunner implements Runnable {
             // detect collisions
     	    Set<Player> deadPlayers = new HashSet<Player>();
         	for (Player p : game.getPlayers()) {
-        		float xDelta = Math.abs(angryKitty.getxPos() - p.getxPos());
-        		float yDelta = Math.abs(angryKitty.getyPos() - p.getyPos());
-        		if (hit(xDelta, yDelta)) {
-        			p.decHP(angryKitty.getatkDmg());
-        			if (p.getcurrHP() <= 0) {
-        				deadPlayers.add(p);
-        			}
-        		}
+        	    if (p.getId() != angryKitty.getId()) {
+            		float xDelta = Math.abs(angryKitty.getxPos() - p.getxPos());
+            		float yDelta = Math.abs(angryKitty.getyPos() - p.getyPos());
+            		if (hit(xDelta, yDelta)) {
+            			p.decHP(angryKitty.getatkDmg());
+            			if (p.getcurrHP() <= 0) {
+            				deadPlayers.add(p);
+            			}
+            		}
+        	    }
             }
         	for (Player p : deadPlayers) {
         	    killPlayer(p, angryKitty);
@@ -226,9 +228,6 @@ public class GameRunner implements Runnable {
     	}
     }
 
-    // Simple O(P) isHit
-    // returns if it hit a player
-    // updates player status based on hit
     private boolean hitPlayer(Attack a, Set<Player> players) {
     	for (Player p : players) {
     		if (a.getOwnerID() != p.getId()) {
@@ -316,6 +315,8 @@ public class GameRunner implements Runnable {
 
     // handle attack a hitting player p
     private void registerAttack(Attack a, Player p) {
+        if (a.getOwnerID() == p.getId()) // can't shoot yourself, keeps angry kitty from killing herself?
+            return;
     	Player attackOwner;
     	if (a.getOwnerID() == angryKitty.getId())
     	    attackOwner = angryKitty;
