@@ -335,9 +335,15 @@ $(function() {
         	break;
         case ("chat"):
           var chat_messages = [];
-          chat_messages = [message.data];
-          for (var i in chat_messages) {
-          	  jumbotron.append("<p>" + chat_messages[i] + "</p>");
+          chat_messages = message.data;
+          console.log(message.data);
+          if (Arrays.isArray(message.data)) {
+              for (var i in chat_messages) {
+          	      jumbotron.append("<p>" + chat_messages[i] + "</p>");
+          	      jumbotron.scrollTop(jumbotron.prop('scrollHeight'));
+              }
+          } else {
+          	  jumbotron.append("<p>" + message.data + "</p>");
           	  jumbotron.scrollTop(jumbotron.prop('scrollHeight'));
           }
         	break;
