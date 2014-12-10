@@ -221,10 +221,12 @@ $(function() {
     }
     
     function youHaveDied(message) {
-        stage.removeChild(player);
-        player = createNewPlayer();
-        $("#deathTextBox").text(message);
-        showYouHaveDied();
+        if (!player.spectating) {
+            stage.removeChild(player);
+            player = createNewPlayer();
+            $("#deathTextBox").text(message);
+            showYouHaveDied();
+        }
     }
     
     $(".playButton").click(showNameSelector);

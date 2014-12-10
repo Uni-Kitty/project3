@@ -1,5 +1,6 @@
 package com.unikitty.project3;
 
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -16,11 +17,17 @@ public class PlayerPinger implements Runnable {
     private Set<Integer> ids;
     
     public PlayerPinger() {  
-        ids = new HashSet<Integer>();
+        ids = Collections.synchronizedSet(new HashSet<Integer>());
     }
     
     public void addPlayer(int id) {
         ids.add(id);
+    }
+    
+    public void removeID(int id) {
+    	if (ids.contains(id)) {
+    		ids.remove(id);
+    	}
     }
     
     public void recordPing(int id, long time) {

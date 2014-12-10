@@ -14,7 +14,8 @@ public class GameRunner implements Runnable {
     private Game game;
     private ConcurrentMap<Integer, Attack> attacksInGame;
     private ConcurrentMap<Integer, Player> playersInGame;
-    private ConcurrentMap<Integer, Long> outstandingACKS;
+    private ConcurrentMap<Integer, ACK> outstandingACKWelcome;
+    private ConcurrentMap<Integer, ACK> outstandingACKDied;
     private static int broadcastDelay;
 	private static int arenaWidth;
 	private static int arenaHeight;
@@ -34,7 +35,8 @@ public class GameRunner implements Runnable {
 	public static final String YOU_HAVE_DIED = "you_have_died";
     
     public GameRunner(Game g, ConcurrentMap<Integer, Attack> attacks, 
-    		           ConcurrentMap<Integer, Player> players, ConcurrentMap<Integer, Long> outA, long pTime, int bDel, int aW, int aH, int hD) {
+    		           ConcurrentMap<Integer, Player> players, ConcurrentMap<Integer, ACK> outAW, ConcurrentMap<Integer, ACK> outAD,
+    		           long pTime, int bDel, int aW, int aH, int hD) {
         game = g;
         attacksInGame = attacks;
         playersInGame = players;
@@ -44,7 +46,8 @@ public class GameRunner implements Runnable {
         hitDistance = hD;
         game.addPlayer(happyKitty);
         game.addPlayer(angryKitty);
-        outstandingACKS = outA;
+        outstandingACKWelcome = outAW;
+        outstandingACKDied = outAD;
     }
     
     public void run() {
@@ -152,17 +155,49 @@ public class GameRunner implements Runnable {
     }
     
     public void checkAcks() {
-    	synchronized(outstandingACKS) {
-	    	for (int i : outstandingACKS.keySet()) {
-	    		if (System.currentTimeMillis() - outstandingACKS.get(i) > ACK_TIMEOUT) {
-	    			outstandingACKS.put(i, System.currentTimeMillis());
+    	synchronized(outstandingACKWelcome) {
+    		Iterator<Integer> welcomeIT = outstandingACKWelcome.keySet().iterator();
+	    	while (welcomeIT.hasNext()) {
+	    		int id = welcomeIT.next();
+	    		ACK a = outstandingACKWelcome.get(id);
+	    		if (System.currentTimeMillis() - a.getLastACKStart() > ACK_TIMEOUT) {
+	    			a.setLastACKStart(System.currentTimeMillis());
+	    			a.incCount();
+	    			if (a.getACKcount() > 10) {
+	    				welcomeIT.remove();
+	    			}
 	    			try {
 		    			Message<Object> m = new Message<Object>();
-		                m.setId(i);
+		                m.setId(id);
 		                m.setType(WELCOME);
 		                String message = mapper.writeValueAsString(m);
 		                System.out.println("WELCOME RESENDING");
-		    			Main.sendMessageToPlayer(i, message);
+		    			Main.sendMessageToPlayer(id, message);
+	    			} catch (Exception e) {
+	    				e.printStackTrace();
+	    			}
+	    		}
+	    	}
+    	}
+    	synchronized(outstandingACKDied) {
+    		Iterator<Integer> diedIT = outstandingACKDied.keySet().iterator();
+	    	while (diedIT.hasNext()) {
+	    		int id = diedIT.next();
+	    		Player p = playersInGame.get(id);
+	    		ACK a = outstandingACKDied.get(id);
+	    		if (System.currentTimeMillis() - a.getLastACKStart() > Math.max(100, p.getRtt() * 2)) {
+	    			a.setLastACKStart(System.currentTimeMillis());
+	    			a.incCount();
+	    			if (a.getACKcount() > 10) {
+	    				diedIT.remove();
+	    			}
+	    			try {
+		    			Message<Object> m = new Message<Object>();
+		                m.setId(id);
+		                m.setType(YOU_HAVE_DIED);
+		                String message = mapper.writeValueAsString(m);
+		                System.out.println("You_HAVE_DIED resending");
+		    			Main.sendMessageToPlayer(id, message);
 	    			} catch (Exception e) {
 	    				e.printStackTrace();
 	    			}
@@ -173,7 +208,6 @@ public class GameRunner implements Runnable {
     
     private void angryCollision() {
     	synchronized(game) {
-        	// TODO: do we need a synch (game) here since the outer method has one?
             // detect collisions
     	    Set<Player> deadPlayers = new HashSet<Player>();
         	for (Player p : game.getPlayers()) {
@@ -392,6 +426,7 @@ public class GameRunner implements Runnable {
         msg.setType("chat");
         msg.setData(killer.getUsername() + " killed " + killed.getUsername());
         try {
+        	outstandingACKDied.put(killed.getId(), new ACK("died", System.currentTimeMillis()));
             Main.broadcastMessage(mapper.writeValueAsString(msg));
         }
         catch (Exception e) {
