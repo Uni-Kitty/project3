@@ -128,14 +128,14 @@ public class Main {
                 	    if (playerLoc.getLatidude() == 0.0 && playerLoc.getLongitude() == 0.0) {
                 	    //	break;
                 	    }
-                	    String[] chat = new String[3];
+                	    String[] chat = new String[2];
                 	    System.out.println(playerLoc);
                 	    chat[0] = playerLoc.getName() + " joined the game";
                 	    String loc_name = "location:";
                 	    if (playerLoc.getCity() != null) {
                 	    	loc_name += " " + playerLoc.getCity();
                 	    }
-                	    if (playerLoc.getRegion() != null) {
+                	    if (playerLoc.getCity() == null && playerLoc.getRegion() != null) {
                 	    	loc_name += " " + playerLoc.getRegion();
                 	    }
                 	    if (playerLoc.getCity() == null && playerLoc.getRegion() == null && playerLoc.getCountry() != null) {
@@ -145,9 +145,9 @@ public class Main {
                 	    	loc_name += " unknown";
                 	    }
                 	    chat[1] = loc_name;
-                	    double distance = earthDistance(SERVER_LAT, SERVER_LON, playerLoc.getLatidude(), playerLoc.getLongitude(), 'M');
-                	    int miles = (int) distance;
-                	    chat[2] = miles + " miles from the server";
+                	    double distance = distance(SERVER_LAT, playerLoc.getLatidude(), SERVER_LON, playerLoc.getLongitude(), 0, 0);
+                	    // int miles = (int) distance;
+                	    // chat[2] = miles + " miles from the server";
                 	    locationMessage.setData(chat);
                 	    try {
                 	        broadcastMessage(mapper.writeValueAsString(locationMessage));
@@ -343,7 +343,7 @@ public class Main {
         return playerSessions.containsKey(id);
     }
     
-    private static double earthDistance(double lat1, double lon1, double lat2, double lon2, char unit) {
+    /*private static double earthDistance(double lat1, double lon1, double lat2, double lon2, char unit) {
 	    double theta = lon1 - lon2;
 	    double dist = Math.sin(deg2rad(lat1)) * Math.sin(deg2rad(lat2)) + Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) * Math.cos(deg2rad(theta));
 	    dist = Math.acos(dist);
@@ -355,19 +355,41 @@ public class Main {
 	      dist = dist * 0.8684;
 	    }
 	    return (dist);
+    }*/
+    
+    private static double distance(double lat1, double lat2, double lon1, double lon2,
+            double el1, double el2) {
+
+        final int R = 6371; // Radius of the earth
+
+        Double latDistance = deg2rad(lat2 - lat1);
+        Double lonDistance = deg2rad(lon2 - lon1);
+        Double a = Math.sin(latDistance / 2) * Math.sin(latDistance / 2)
+                + Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2))
+                * Math.sin(lonDistance / 2) * Math.sin(lonDistance / 2);
+        Double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        double distance = R * c * 1000; // convert to meters
+
+        double height = el1 - el2;
+        distance = Math.pow(distance, 2) + Math.pow(height, 2);
+        return Math.sqrt(distance);
+    }
+
+    private static double deg2rad(double deg) {
+        return (deg * Math.PI / 180.0);
     }
 
 	/*:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::*/
 	/*::  This function converts decimal degrees to radians             :*/
 	/*:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::*/
-	private static double deg2rad(double deg) {
-	  return (deg * Math.PI / 180.0);
-	}
+	//private static double deg2rad(double deg) {
+	//  return (deg * Math.PI / 180.0);
+	//}
 	
     /*:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::*/
 	/*::  This function converts radians to decimal degrees             :*/
     /*:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::*/
-	private static double rad2deg(double rad) {
-	  return (rad * 180.0 / Math.PI);
-	}
+	//private static double rad2deg(double rad) {
+	//  return (rad * 180.0 / Math.PI);
+	//}
 }
