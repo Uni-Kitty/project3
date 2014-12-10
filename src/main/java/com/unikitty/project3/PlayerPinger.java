@@ -44,10 +44,12 @@ public class PlayerPinger implements Runnable {
                 Message<Long> msg = new Message<Long>();
                 msg.setType(PING);
                 msg.setData(System.currentTimeMillis());
-                for (int id : ids) {
-                    msg.setId(id);
-                    String message = mapper.writeValueAsString(msg);
-                    Main.sendMessageToPlayer(id, message);
+                synchronized (ids) {
+                    for (int id : ids) {
+                        msg.setId(id);
+                        String message = mapper.writeValueAsString(msg);
+                        Main.sendMessageToPlayer(id, message);
+                    }
                 }
             }
             catch (Exception e) {
