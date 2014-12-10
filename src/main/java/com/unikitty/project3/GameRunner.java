@@ -152,20 +152,22 @@ public class GameRunner implements Runnable {
     }
     
     public void checkAcks() {
-    	for (int i : outstandingACKS.keySet()) {
-    		if (System.currentTimeMillis() - outstandingACKS.get(i) > ACK_TIMEOUT) {
-    			outstandingACKS.put(i, System.currentTimeMillis());
-    			try {
-	    			Message<Object> m = new Message<Object>();
-	                m.setId(i);
-	                m.setType(WELCOME);
-	                String message = mapper.writeValueAsString(m);
-	                System.out.println("WELCOME RESENDING");
-	    			Main.sendMessageToPlayer(i, message);
-    			} catch (Exception e) {
-    				e.printStackTrace();
-    			}
-    		}
+    	synchronized(outstandingACKS) {
+	    	for (int i : outstandingACKS.keySet()) {
+	    		if (System.currentTimeMillis() - outstandingACKS.get(i) > ACK_TIMEOUT) {
+	    			outstandingACKS.put(i, System.currentTimeMillis());
+	    			try {
+		    			Message<Object> m = new Message<Object>();
+		                m.setId(i);
+		                m.setType(WELCOME);
+		                String message = mapper.writeValueAsString(m);
+		                System.out.println("WELCOME RESENDING");
+		    			Main.sendMessageToPlayer(i, message);
+	    			} catch (Exception e) {
+	    				e.printStackTrace();
+	    			}
+	    		}
+	    	}
     	}
     }
     
