@@ -292,8 +292,12 @@ $(function() {
             	game.textDisplays.push(text);
             	break;
             case ("chat"):
-            	jumbotron.append("<p>" + message.data + "</p>");
-            	jumbotron.scrollTop(jumbotron.prop('scrollHeight'));
+              var chat_messages = [];
+              chat_messages = [message.data];
+              for (var i in chat_messages) {
+            	    jumbotron.append("<p>" + chat_messages[i] + "</p>");
+            	    jumbotron.scrollTop(jumbotron.prop('scrollHeight'));
+              }
             	break;
             default:
                 console.log("unknown message type:");
