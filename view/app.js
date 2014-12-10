@@ -6,6 +6,7 @@ $(function() {
     var UPDATE = "update";
     var WELCOME = "welcome";
     var ACK_WELCOME = "ack_welcome";
+    var ACK_DIED = "ack_died";
     var LOCATION = "location";
     var PLAYER_UPDATE = "player_update";
     var ATTACK = "attack";
@@ -287,6 +288,11 @@ $(function() {
             break;
         case (YOU_HAVE_DIED):
             youHaveDied(message.data);
+            var ackDied = {};
+            ackDied.type = ACK_DIED;
+            ackDied.id = userid;
+            ackDied.data = userid;
+            ws.send(JSON.stringify(ackDied));
             break;
         case (PING):
             // console.log(message);
