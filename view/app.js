@@ -273,6 +273,7 @@ $(function() {
                              );
                 });
                 location.id = userid;
+                location.name = player.username;
                 ws.send(JSON.stringify(location));
                 break;
             case (UPDATE):
