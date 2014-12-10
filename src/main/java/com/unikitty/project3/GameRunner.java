@@ -183,9 +183,9 @@ public class GameRunner implements Runnable {
     		Iterator<Integer> diedIT = outstandingACKDied.keySet().iterator();
 	    	while (diedIT.hasNext()) {
 	    		int id = diedIT.next();
-	    		Player p = playersInGame.get(id);
+	    		// Player p = playersInGame.get(id);
 	    		ACK a = outstandingACKDied.get(id);
-	    		if (System.currentTimeMillis() - a.getLastACKStart() > Math.max(100, p.getRtt() * 2)) {
+	    		if (System.currentTimeMillis() - a.getLastACKStart() > 100) {
 	    			a.setLastACKStart(System.currentTimeMillis());
 	    			a.incCount();
 	    			if (a.getACKcount() > 10) {
