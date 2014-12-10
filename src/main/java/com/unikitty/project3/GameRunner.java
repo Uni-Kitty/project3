@@ -412,14 +412,15 @@ public class GameRunner implements Runnable {
     	Player attackOwner;
     	if (a.getOwnerID() == angryKitty.getId())
     	    attackOwner = angryKitty;
-    	else
+    	else if (playersInGame.containsKey(a.getOwnerID())) {
     	    attackOwner = playersInGame.get(a.getOwnerID());
-    	// System.out.println(attackOwner);
-    	p.decHP(attackOwner.getatkDmg());
-    	attackOwner.incHitCount();
-    	if (p.getcurrHP() <= 0) {
-    	    killPlayer(p, attackOwner);
-    		attackOwner.incKills();
+        	// System.out.println(attackOwner);
+        	p.decHP(attackOwner.getatkDmg());
+        	attackOwner.incHitCount();
+        	if (p.getcurrHP() <= 0) {
+        	    killPlayer(p, attackOwner);
+        		attackOwner.incKills();
+        	}
     	}
     }
     
