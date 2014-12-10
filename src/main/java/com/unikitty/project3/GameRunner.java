@@ -145,6 +145,9 @@ public class GameRunner implements Runnable {
             	    long avgTime = timeSum / 2100;
             	    System.out.println("Game loop avg time: " + avgTime + " ns with " + game.getPlayers().size() + " active players");
             	    timeSum = 0;
+            	    for (Player p : playersInGame.values()) {
+            	        System.out.println("Player " + p.getUsername() + ", rtt: " + p.getRtt());
+            	    }
             	}
                 Thread.sleep(broadcastDelay);
             }
