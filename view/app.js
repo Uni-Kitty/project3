@@ -556,14 +556,16 @@ $(function() {
                 game.presents[id].lastUpdate = currTime;
             }
         });
-        for (var i in game.textDisplays) {
-        	var text = game.textDisplays[i];
-        	if (currTime > text.expiration) {
-        		player.removeChild(text);
-        		delete game.textDisplays[i];
-        	} else {
-        		text.anchor.y += 0.075;
-        	}
+        if (!player.spectating) {
+            for (var i in game.textDisplays) {
+            	var text = game.textDisplays[i];
+            	if (currTime > text.expiration) {
+            		player.removeChild(text);
+            		delete game.textDisplays[i];
+            	} else {
+            		text.anchor.y += 0.075;
+            	}
+            }
         }
         data.graveYard.forEach(function(grave) {
         	var id = grave.xPos + grave.yPos;
@@ -605,7 +607,8 @@ $(function() {
     function updateHealthBarWidth(player) {
     	var width = ( 80.0 * player.currHP ) / player.maxHP;
     	// console.log(width);
-    	player.healthBar.width = width;
+    	if (player.healthBar != undefined)
+    	    player.healthBar.width = width;
     }
     
     function addNameToPlayer(player, name) {
