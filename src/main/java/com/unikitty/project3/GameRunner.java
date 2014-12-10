@@ -145,6 +145,9 @@ public class GameRunner implements Runnable {
             	    long avgTime = timeSum / 2100;
             	    System.out.println("Game loop avg time: " + avgTime + " ns with " + game.getPlayers().size() + " active players");
             	    timeSum = 0;
+            	    for (Player p : playersInGame.values()) {
+            	        System.out.println("Player " + p.getUsername() + ", rtt: " + p.getRtt());
+            	    }
             	}
                 Thread.sleep(broadcastDelay);
             }
@@ -183,9 +186,9 @@ public class GameRunner implements Runnable {
     		Iterator<Integer> diedIT = outstandingACKDied.keySet().iterator();
 	    	while (diedIT.hasNext()) {
 	    		int id = diedIT.next();
-	    		Player p = playersInGame.get(id);
+	    		// Player p = playersInGame.get(id);
 	    		ACK a = outstandingACKDied.get(id);
-	    		if (System.currentTimeMillis() - a.getLastACKStart() > Math.max(100, p.getRtt() * 2)) {
+	    		if (System.currentTimeMillis() - a.getLastACKStart() > 100) {
 	    			a.setLastACKStart(System.currentTimeMillis());
 	    			a.incCount();
 	    			if (a.getACKcount() > 10) {
