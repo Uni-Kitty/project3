@@ -6,6 +6,7 @@ $(function() {
     var UPDATE = "update";
     var WELCOME = "welcome";
     var ACK = "ack";
+    var LOCATION = "location";
     var PLAYER_UPDATE = "player_update";
     var ATTACK = "attack";
     var YOU_HAVE_DIED = "you_have_died";
@@ -244,7 +245,7 @@ $(function() {
     $("#playAgainButton").click(function() {
         startGame(name, type);
     });
-    	  
+
     // Upper left
     game.walls[0] = (addElementToStage(WALL, UPPER_LEFT_WALL_X, UPPER_LEFT_WALL_Y, -Math.PI / 4), 0);
     // Lower left
@@ -333,6 +334,7 @@ $(function() {
     ws.onerror = function(err) {
         console.log("error: " + err.data);
         $("#loadingImg").css("display", "none");
+        $("#overlay").css("display", "none");
         $("#somethingWentWrong").css("display", "block");
     };
     
