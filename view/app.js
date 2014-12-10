@@ -5,6 +5,7 @@ $(function() {
     var PLAYER_JOINED = "player_joined";
     var UPDATE = "update";
     var WELCOME = "welcome";
+    var ACK = "ack";
     var PLAYER_UPDATE = "player_update";
     var ATTACK = "attack";
     var YOU_HAVE_DIED = "you_have_died";
@@ -235,6 +236,11 @@ $(function() {
             case (WELCOME):
                 console.log("welcome msg received, id: " + message.id);
                 userid = message.id;
+                var ackWelcome = {};
+                ackWelcome.type = ACK;
+                ackWelcome.id = userid;
+                ackWelcome.data = userid;
+                ws.send(JSON.stringify(ackWelcome));
                 break;
             case (YOU_HAVE_DIED):
             	youHaveDied(message.data);

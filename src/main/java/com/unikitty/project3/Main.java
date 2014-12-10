@@ -1,5 +1,6 @@
 package com.unikitty.project3;
 
+import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -30,6 +31,7 @@ public class Main {
     public static final String JOIN_GAME = "join_game";
     public static final String PLAYER_UPDATE = "player_update";
     public static final String PLAYER_JOINED = "player_joined";
+    public static final String ACK = "ack";
     public static final String CHAT = "chat";
     public static final int ARENA_WIDTH = 800;
     public static final int ARENA_HEIGHT = 600;
@@ -41,6 +43,7 @@ public class Main {
 	private static ConcurrentMap<Integer, Player> playersInGame = new ConcurrentHashMap<Integer, Player>();
 	private static ConcurrentMap<Integer, Attack> attacksInGame = new ConcurrentHashMap<Integer, Attack>();
 	private static ConcurrentMap<Integer, Session> playerSessions = new ConcurrentHashMap<Integer, Session>();
+	private static ConcurrentMap<Integer, Long> outstandingACKS = new ConcurrentHashMap<Integer, Long>();
 	private static ObjectMapper mapper = new ObjectMapper(); // mapper for obj<-->JSON
 	private static AtomicInteger id = new AtomicInteger(1); // avoid race conditions, use atomic int for ids
 	private static PlayerPinger playerPinger = new PlayerPinger();
@@ -72,7 +75,15 @@ public class Main {
         @OnWebSocketConnect
         public void onConnect(Session session) {
         	int id = getNextId();
-            Message<Object> m = new Message<Object>();
+        	outstandingACKS.put(id, System.currentTimeMillis());
+            welcome(session, id);
+            playerSessions.put(id, session);
+            playerPinger.addPlayer(id);
+            System.out.println("Connect: " + session.getRemoteAddress().getAddress());
+        }
+        
+        public void welcome(Session session, int id) {
+        	Message<Object> m = new Message<Object>();
             m.setId(id);
             m.setType(WELCOME);
             try {
@@ -80,9 +91,6 @@ public class Main {
             } catch (Exception e) {
                 e.printStackTrace();
             }
-            playerSessions.put(id, session);
-            playerPinger.addPlayer(id);
-            System.out.println("Connect: " + session.getRemoteAddress().getAddress());
         }
         
         public void ping(Session session) {
@@ -101,6 +109,11 @@ public class Main {
             try {
             	Message<Object> msg = mapper.readValue(message, new TypeReference<Message<Object>>() {});
                 switch (msg.getType()) {
+                	case (ACK):
+                		System.out.println("ACK RECIEVED");
+                		Message<Integer> idMessage = mapper.readValue(message, new TypeReference<Message<Integer>>(){});
+                		Integer sessionID = (Integer) idMessage.getData();
+                		outstandingACKS.remove(sessionID);
 	                case (PING):
 	                    // Session s = playerSessions.get(msg.getId());
 	                    Message<Long> msgLong = mapper.readValue(message, new TypeReference<Message<Long>>(){});
@@ -137,8 +150,6 @@ public class Main {
 	                	Message<Player> m3 = mapper.readValue(message, new TypeReference<Message<Player>>() {});
 	                	Player playerInfo = m3.getData();
 	                	Player newPlayer = new Player(playerInfo.getUsername(), playerInfo.gettype(), m3.getId());
-	                	newPlayer.setxPos(ARENA_WIDTH / 2);
-	                	newPlayer.setyPos(ARENA_HEIGHT / 2);
 	                	game.addPlayer(newPlayer);
 	                	playersInGame.put(newPlayer.getId(), newPlayer);
 	                	m3.setType(PLAYER_JOINED);
@@ -162,6 +173,7 @@ public class Main {
             sendMessageToPlayer(playerId, message);
         }
     }
+    
     
     public static void recordTime(int id, long time) {
         if (playersInGame.containsKey(id))
@@ -221,7 +233,7 @@ public class Main {
     
     private static void startGame() {
         new Thread(new PresentBuilder(game, ARENA_WIDTH, ARENA_HEIGHT)).start();
-        new Thread(new GameRunner(game, attacksInGame, playersInGame, PLAYER_TIMEOUT, BROADCAST_DELAY, ARENA_WIDTH, ARENA_HEIGHT, HIT_DISTANCE)).start();
+        new Thread(new GameRunner(game, attacksInGame, playersInGame, outstandingACKS, PLAYER_TIMEOUT, BROADCAST_DELAY, ARENA_WIDTH, ARENA_HEIGHT, HIT_DISTANCE)).start();
         new Thread(playerPinger).start();
     }
     

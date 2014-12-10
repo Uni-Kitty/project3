@@ -14,6 +14,7 @@ public class GameRunner implements Runnable {
     private Game game;
     private ConcurrentMap<Integer, Attack> attacksInGame;
     private ConcurrentMap<Integer, Player> playersInGame;
+    private ConcurrentMap<Integer, Long> outstandingACKS;
     private static int broadcastDelay;
 	private static int arenaWidth;
 	private static int arenaHeight;
@@ -27,11 +28,13 @@ public class GameRunner implements Runnable {
 	private static final long PRES_TIMEOUT = 30000;
 	private static final float WALL_COL_DIST = 10;
 	private static final long GHOST_DELAY = 5000;
+	private static final String WELCOME = "welcome";
+    public static final long ACK_TIMEOUT = 1000;
 	
 	public static final String YOU_HAVE_DIED = "you_have_died";
     
     public GameRunner(Game g, ConcurrentMap<Integer, Attack> attacks, 
-    		           ConcurrentMap<Integer, Player> players, long pTime, int bDel, int aW, int aH, int hD) {
+    		           ConcurrentMap<Integer, Player> players, ConcurrentMap<Integer, Long> outA, long pTime, int bDel, int aW, int aH, int hD) {
         game = g;
         attacksInGame = attacks;
         playersInGame = players;
@@ -41,6 +44,7 @@ public class GameRunner implements Runnable {
         hitDistance = hD;
         game.addPlayer(happyKitty);
         game.addPlayer(angryKitty);
+        outstandingACKS = outA;
     }
     
     public void run() {
@@ -70,6 +74,7 @@ public class GameRunner implements Runnable {
                 long timeSum = 0; // track average loop time
                 long time = System.nanoTime();
             	synchronized (game) {
+            		checkAcks();
             		// update attacks
                 	Iterator<Attack> it = game.getAttacks().iterator();
                 	while(it.hasNext()) {
@@ -144,6 +149,24 @@ public class GameRunner implements Runnable {
                 e.printStackTrace();
             }
         }
+    }
+    
+    public void checkAcks() {
+    	for (int i : outstandingACKS.keySet()) {
+    		if (System.currentTimeMillis() - outstandingACKS.get(i) > ACK_TIMEOUT) {
+    			outstandingACKS.put(i, System.currentTimeMillis());
+    			try {
+	    			Message<Object> m = new Message<Object>();
+	                m.setId(i);
+	                m.setType(WELCOME);
+	                String message = mapper.writeValueAsString(m);
+	                System.out.println("WELCOME RESENDING");
+	    			Main.sendMessageToPlayer(i, message);
+    			} catch (Exception e) {
+    				e.printStackTrace();
+    			}
+    		}
+    	}
     }
     
     private void angryCollision() {

@@ -1,5 +1,6 @@
 package com.unikitty.project3;
 
+import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class Player extends GameEntity {
@@ -22,6 +23,9 @@ public class Player extends GameEntity {
   public static final String RANGER = "ranger";
   public static final String HAPPY_KITTY = "happy_kitty";
   public static final String ANGRY_KITTY = "angry_kitty";
+  private static final int[] INIT_POSITION_X = {50, 750};
+  private static final int[] INIT_POSITION_Y = {50, 550};
+  private static Random randy = new Random();
 
 	public Player() {}
 	
@@ -39,6 +43,8 @@ public class Player extends GameEntity {
 	    this.username = name;
 	    this.type = type;
 	    this.color = Color.COLORS[nums.incrementAndGet() % 7];
+	    this.xPos = INIT_POSITION_X[randy.nextInt(INIT_POSITION_X.length)];
+	    this.yPos = INIT_POSITION_Y[randy.nextInt(INIT_POSITION_Y.length)];
 	    switch (type) {
 	    case (WIZARD):
 	        maxHP = 10;
