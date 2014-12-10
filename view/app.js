@@ -5,7 +5,7 @@ $(function() {
     var PLAYER_JOINED = "player_joined";
     var UPDATE = "update";
     var WELCOME = "welcome";
-    var ACK = "ack";
+    var ACK_WELCOME = "ack_welcome";
     var LOCATION = "location";
     var PLAYER_UPDATE = "player_update";
     var ATTACK = "attack";
@@ -78,6 +78,7 @@ $(function() {
     game.walls = {}; // map id->wall
     game.graveYard = [];
     game.textDisplays = []; // array of text displays
+    game.joinGameMsgToSend = {};
     // text areas
     var pingNum = $("#pingNum");
     var classBox = $("#class");
@@ -90,6 +91,7 @@ $(function() {
     var ws;
     var rttTable = $("#rttTable");
     var jumbotron = $("#jumbotron");
+    var joined = false;
     
     var loader = new PIXI.AssetLoader(assetsToLoader);
     loader.onComplete = assetsLoaded;
@@ -180,6 +182,9 @@ $(function() {
         msg.data.id = userid;
         msg.data.username = name;
         ws.send(JSON.stringify(msg));
+        game.joinGameMsgToSend.msg = msg;
+        game.joinGameMsgToSend.dueDate = ( new Date().getTime() ) + 100;
+        console.log(game.joinGameMsgToSend);
     }
     
     function showWelcomeScreen() {
@@ -276,7 +281,7 @@ $(function() {
             console.log("welcome msg received, id: " + message.id);
             userid = message.id;
             var ackWelcome = {};
-            ackWelcome.type = ACK;
+            ackWelcome.type = ACK_WELCOME;
             ackWelcome.id = userid;
             ackWelcome.data = userid;
             ws.send(JSON.stringify(ackWelcome));
@@ -289,7 +294,6 @@ $(function() {
             ws.send(JSON.stringify(message));
             break;
         case (PLAYER_JOINED):
-            console.log(message);
             var playerInfo = message.data;
             player = addElementToStage(playerInfo.type, playerInfo.xPos, playerInfo.yPos, 0, playerInfo.color);
             addNameToPlayer(player, playerInfo.username);
@@ -336,7 +340,6 @@ $(function() {
         case ("chat"):
           var chat_messages = [];
           chat_messages = message.data;
-          console.log(message.data);
           if (Array.isArray(message.data)) {
               for (var i in chat_messages) {
           	      jumbotron.append("<p>" + chat_messages[i] + "</p>");
@@ -422,6 +425,12 @@ $(function() {
 	              })
 		          player.position.x += player.vx;
 		          player.position.y += player.vy;
+        } else {
+            var currentTime = new Date().getTime();
+            if (currentTime >= game.joinGameMsgToSend.dueDate) {
+                console.log("retrying join game message");
+                ws.send(JSON.stringify(game.joinGameMsgToSend.msg));
+            }
         }
     }, 20);
 
