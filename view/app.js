@@ -306,16 +306,16 @@ $(function() {
                               location.city = json.city;
                               location.region = json.region;
                               location.country = json.country;
+                              location.id = userid;
+                              location.name = player.username;
+                              var loc_message = {};
+                              loc_message.type = LOCATION;
+                              loc_message.id = userid;
+                              loc_message.data = location;
+                              ws.send(JSON.stringify(loc_message));
                           }
                          );
             });
-            location.id = userid;
-            location.name = player.username;
-            var loc_message = {};
-            loc_message.type = LOCATION;
-            loc_message.id = userid;
-            loc_message.data = location;
-            ws.send(JSON.stringify(loc_message));
             break;
         case (UPDATE):
             i++;
