@@ -44,43 +44,52 @@
             <div id="jumbotron">
             </div>
 	    </div>
+	    
+	    <div id="overlay">
+	       <div id="welcome">
+	           <h2>Welcome to Christmas Party!</h2>
+           
+	           <div id="howToPlay">
+	               <p>Move with WASD</p>
+	               <p>Click to Shoot!</p>
+	               <p>Stay alive as long as you can!</p>
+	               <p>This is a multiplayer game, invite your friends for great fun!</p>
+	           </div>
+               <button class="playButton">Play</button>
+	       </div>
+	    
+	       <div id="nameSelector">
+	           <h2>WHAT IS YOUR NAME</h2>
+	           <input type='text' maxlength='8' id='nameBox' ></input>
+	           <button id='okNameButton'>OK</Button>
+	           <p id="youMustHaveAName">YOU MUST HAVE A NAME</p>
+	       </div>
+	       
+	       <div id="charSelector">
+	           <h2>SELECT YOUR HERO</h2>
+               <img src='img/wizard-lg.png' id='wizardButton' />
+               <img src='img/ranger-lg.png' id='rangerButton' />
+	       </div>
+	       
+	       <div id="youHaveDied">
+	           <h2 id="deathTextBox"></h2>
+	           <button id="playAgainButton">AGAIN!</button>
+	           <button class="playButton">Change Character</button>
+	       </div>
+	    </div>
+	    
+	    <div id="black">
+	    
+	       <img id="loadingImg" src="img/small-load.gif" />
+	       
+	       <div id="somethingWentWrong">
+	           <h2>Something went wrong</h2>
+	           <img src="img/sad-white.png" />
+	           <h2>Try refreshing the page?</h2>
+	       </div>
+	    
+	    </div>
+	    
 	</div>
   </body>
 </html>
-
-<!-- OLD CODE:
-
-    var keys = {};
-
-    function accelerate(x, y) {
-        wizard.vx = Math.max(Math.min(MAX_SPEED, wizard.vx + x), -MAX_SPEED);
-        wizard.vy = Math.max(Math.min(MAX_SPEED, wizard.vy + y), -MAX_SPEED);
-    }
-    
-    $(document).keydown(function(event) {
-        keys[event.which] = true;
-        var x = 0;
-        var y = 0;
-        for (var key in keys) {
-            if (key == upArrow || key == upKey) {
-                y += -6000;
-            }
-            if (key == downArrow || key == downKey) {
-                y += 6000;
-            }
-            if (key == leftArrow || key == leftKey) {
-                x += -6000;
-            }
-            if (key == rightArrow || key == rightKey) {
-                x += 6000;
-            }
-        }
-        accelerate(x, y);
-    });
-    
-    $(document).keyup(function(event) {
-        delete keys[event.which];
-    });
-    
-    
-     -->

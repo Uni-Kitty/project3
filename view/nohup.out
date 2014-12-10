@@ -16104,3 +16104,23 @@
 127.0.0.1 - - [07/Dec/2014 13:46:25] "GET /img/wizard-lg.png HTTP/1.1" 200 -
 127.0.0.1 - - [07/Dec/2014 13:46:25] "GET /img/ranger-lg.png HTTP/1.1" 200 -
 127.0.0.1 - - [07/Dec/2014 13:46:25] "GET /img/present4.png HTTP/1.1" 200 -
+159.226.142.168 - - [07/Dec/2014 16:31:38] code 404, message File not found
+159.226.142.168 - - [07/Dec/2014 16:31:38] "GET http://www.sina.com.cn/ HTTP/1.1" 404 -
+202.101.72.22 - - [07/Dec/2014 19:34:19] code 404, message File not found
+202.101.72.22 - - [07/Dec/2014 19:34:19] "GET http://www.wikimedia.org/ HTTP/1.1" 404 -
+Traceback (most recent call last):
+  File "/usr/lib64/python2.7/SocketServer.py", line 295, in _handle_request_noblock
+    self.process_request(request, client_address)
+  File "/usr/lib64/python2.7/SocketServer.py", line 321, in process_request
+    self.finish_request(request, client_address)
+  File "/usr/lib64/python2.7/SocketServer.py", line 334, in finish_request
+    self.RequestHandlerClass(request, client_address, self)
+  File "/usr/lib64/python2.7/SocketServer.py", line 649, in __init__
+    self.handle()
+  File "/usr/lib64/python2.7/BaseHTTPServer.py", line 340, in handle
+    self.handle_one_request()
+  File "/usr/lib64/python2.7/BaseHTTPServer.py", line 310, in handle_one_request
+    self.raw_requestline = self.rfile.readline(65537)
+  File "/usr/lib64/python2.7/socket.py", line 476, in readline
+    data = self._sock.recv(self._rbufsize)
+error: [Errno 104] Connection reset by peer
