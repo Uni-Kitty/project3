@@ -41,6 +41,7 @@ $(function() {
     var angryKittyImg = "img/angryKitty-sm.png";
     var laserBallImg = "img/laser-ball.png";
     var tombstoneImg = "img/tombstone-sm.png";
+    var assetsToLoader = [fireballImg, arrowImg, wallImg, presentImg0, presentImg1, presentImg2, presentImg3, greenSquareImg, happyKittyImg, angryKittyImg, laserBallImg, tombstoneImg];
     var PLAYER_NAME_FONT = {font:"14px Courier"};
     var userid = 0;
     var MAX_SPEED = 6;
@@ -89,10 +90,16 @@ $(function() {
     var rttTable = $("#rttTable");
     var jumbotron = $("#jumbotron");
     
-    // var assetsToLoader = [fireballImg, arrowImg, greenSquareImg];
-    // var loader = new PIXI.AssetLoader(assetsToLoader);
-    // loader.onComplete = assetsLoaded;
-    // loader.load();
+    var loader = new PIXI.AssetLoader(assetsToLoader);
+    loader.onComplete = assetsLoaded;
+    loader.load();
+    
+    function assetsLoaded() {
+        if (player.connected)
+            showWelcomeScreen();
+        else
+            player.loaded = true;
+    }
     
     var stage = new PIXI.Stage(0xFFFFFF);
     stage.interactive = true;
@@ -163,7 +170,7 @@ $(function() {
     }
     
     function startGame(name, type) {
-        $('#charSelector').remove();
+        $('#overlay').css("display", "none");
         var msg = {};
         msg.type = JOIN_GAME;
         msg.id = userid;
@@ -174,221 +181,255 @@ $(function() {
         ws.send(JSON.stringify(msg));
     }
     
-    function joinGameSequence() {
-        $('body').append('<div id="charSelector"></div>');
-        $("#charSelector").append("<p>CHOOSE YOUR NAME</p>");
-        $("#charSelector").append("<input type='text' maxlength='8' id='nameBox' value='" + name + "'></input>");
-        $("#charSelector").append("<button id='okGoButton'>OK</Button>");
-        $("#okGoButton").click(function() {
-            name = $("#nameBox").val();
-            if (name != "") {
-                $("#charSelector").empty();
-                $("#charSelector").append("<p>SELECT YOUR HERO</p>");
-                $("#charSelector").append("<img src='img/wizard-lg.png' id='wizardButton' />");
-                $("#charSelector").append("<img src='img/ranger-lg.png' id='rangerButton' />");
-                $("#wizardButton").click(function() {
-                    startGame(name, WIZARD);
-                })
-                $("#rangerButton").click(function() {
-                    startGame(name, RANGER);
-                })
-            }
-        });
+    function showWelcomeScreen() {
+        $("#black").css("display", "none");
+        $("#nameSelector").css("display", "none");
+        $("#charSelector").css("display", "none");
+        $("#youHaveDied").css("display", "none");
+        $("#welcome").css("display", "block");
+    }
+    
+    function showNameSelector() {
+        $("#black").css("display", "none");
+        $("#welcome").css("display", "none");
+        $("#charSelector").css("display", "none");
+        $("#youHaveDied").css("display", "none");
+        $("#nameSelector").css("display", "block");
+    }
+    
+    function showCharSelector() {
+        $("#black").css("display", "none");
+        $("#welcome").css("display", "none");
+        $("#nameSelector").css("display", "none");
+        $("#youHaveDied").css("display", "none");
+        $("#charSelector").css("display", "block");
+    }
+    
+    function showYouHaveDied() {
+        $("#black").css("display", "none");
+        $("#overlay").css("display", "block");
+        $("#welcome").css("display", "none");
+        $("#nameSelector").css("display", "none");
+        $("#charSelector").css("display", "none");
+        $("#youHaveDied").css("display", "block");
     }
     
     function youHaveDied(message) {
         stage.removeChild(player);
         player = createNewPlayer();
-        $('body').append('<div id="charSelector"></div>');
-        $("#charSelector").append("<p>" + message + "</p>");
-        $("#charSelector").append("<button id='okDiedButton'>OK</Button>");
-        $("#okDiedButton").click(function() {
-            $('#charSelector').remove();
-            joinGameSequence();
-        });
+        $("#deathTextBox").text(message);
+        showYouHaveDied();
     }
     
-    // function assetsLoaded() {
+    $(".playButton").click(showNameSelector);
+    
+    $("#okNameButton").click(function() {
+        name = $("#nameBox").val();
+        if (name.length != 0)
+            showCharSelector();
+        else
+            $("#youMustHaveAName").css("display", "block");
+    });
+    
+    $("#wizardButton").click(function() {
+        type = WIZARD;
+        startGame(name, WIZARD);
+    });
+    
+    $("#rangerButton").click(function() {
+        type = RANGER;
+        startGame(name, RANGER);
+    });
+    
+    $("#playAgainButton").click(function() {
+        startGame(name, type);
+    });
     	  
-        // Upper left
-        game.walls[0] = (addElementToStage(WALL, UPPER_LEFT_WALL_X, UPPER_LEFT_WALL_Y, -Math.PI / 4), 0);
-        // Lower left
-        game.walls[1] = (addElementToStage(WALL, LOWER_LEFT_WALL_X, LOWER_LEFT_WALL_Y, Math.PI / 4), 0);
-        // Upper right
-        game.walls[2] = (addElementToStage(WALL, UPPER_RIGHT_WALL_X, UPPER_RIGHT_WALL_Y, Math.PI / 4), 0);
-        // Lower right
-        game.walls[3] = (addElementToStage(WALL, LOWER_RIGHT_WALL_X, LOWER_RIGHT_WALL_Y, -Math.PI / 4), 0);
-        
-        var serverAddress = "ws://54.69.151.4:9999/";
-        if (document.location.hostname == "localhost")
-            serverAddress = "ws://127.0.0.1:9999/";
-        ws = new WebSocket(serverAddress);
-        
-        ws.onopen = function() {
-            console.log("socket opened");
-            joinGameSequence();
-        };
-        
-        var i = 0;
-        ws.onmessage = function (evt) {
-            var message = JSON.parse(evt.data);
-            switch (message.type) {
-            case (WELCOME):
-                console.log("welcome msg received, id: " + message.id);
-                userid = message.id;
-                var ackWelcome = {};
-                ackWelcome.type = ACK;
-                ackWelcome.id = userid;
-                ackWelcome.data = userid;
-                ws.send(JSON.stringify(ackWelcome));
-                break;
-            case (YOU_HAVE_DIED):
-            	youHaveDied(message.data);
-            	break;
-            case (PING):
-            	// console.log(message);
-                ws.send(JSON.stringify(message));
-                break;
-            case (PLAYER_JOINED):
-                console.log(message);
-                var playerInfo = message.data;
-                player = addElementToStage(playerInfo.type, playerInfo.xPos, playerInfo.yPos, 0, playerInfo.color);
-                addNameToPlayer(player, playerInfo.username);
-                player.type = playerInfo.type;
-                player.id = playerInfo.id;
-                player.spectating = false;
-                player.username = playerInfo.username;
-                break;
-            case (UPDATE):
-                i++;
-                if (i % 100 == 1) {
-                    console.log(message.data);
-                }
-                update = message.data;
-                break;
-            case ("text_display"):
-            	var text = new PIXI.Text(message.data.text, {font:"16px Courier", fill:message.data.color});
-            	text.expiration = ( new Date().getTime() ) + 750;
-            	text.anchor.x = 0.5;
-            	text.anchor.y = 1;
-            	text.scale.x = player.scale.x;
-            	player.addChild(text);
-            	game.textDisplays.push(text);
-            	break;
-            case ("chat"):
-            	jumbotron.append("<p>" + message.data + "</p>");
-            	jumbotron.scrollTop(jumbotron.prop('scrollHeight'));
-            	break;
-            default:
-                console.log("unknown message type:");
-                console.log(message);
-                break;
+    // Upper left
+    game.walls[0] = (addElementToStage(WALL, UPPER_LEFT_WALL_X, UPPER_LEFT_WALL_Y, -Math.PI / 4), 0);
+    // Lower left
+    game.walls[1] = (addElementToStage(WALL, LOWER_LEFT_WALL_X, LOWER_LEFT_WALL_Y, Math.PI / 4), 0);
+    // Upper right
+    game.walls[2] = (addElementToStage(WALL, UPPER_RIGHT_WALL_X, UPPER_RIGHT_WALL_Y, Math.PI / 4), 0);
+    // Lower right
+    game.walls[3] = (addElementToStage(WALL, LOWER_RIGHT_WALL_X, LOWER_RIGHT_WALL_Y, -Math.PI / 4), 0);
+    
+    var serverAddress = "ws://54.69.151.4:9999/";
+    if (document.location.hostname == "localhost")
+        serverAddress = "ws://127.0.0.1:9999/";
+    ws = new WebSocket(serverAddress);
+    
+    ws.onopen = function() {
+        console.log("socket opened");
+        if (player.loaded)
+            showWelcomeScreen();
+        else
+            player.connected = true;
+    };
+    
+    var i = 0;
+    ws.onmessage = function (evt) {
+        var message = JSON.parse(evt.data);
+        switch (message.type) {
+        case (WELCOME):
+            console.log("welcome msg received, id: " + message.id);
+            userid = message.id;
+            var ackWelcome = {};
+            ackWelcome.type = ACK;
+            ackWelcome.id = userid;
+            ackWelcome.data = userid;
+            ws.send(JSON.stringify(ackWelcome));
+            break;
+        case (YOU_HAVE_DIED):
+        	youHaveDied(message.data);
+        	break;
+        case (PING):
+        	// console.log(message);
+            ws.send(JSON.stringify(message));
+            break;
+        case (PLAYER_JOINED):
+            console.log(message);
+            var playerInfo = message.data;
+            player = addElementToStage(playerInfo.type, playerInfo.xPos, playerInfo.yPos, 0, playerInfo.color);
+            addNameToPlayer(player, playerInfo.username);
+            player.type = playerInfo.type;
+            player.id = playerInfo.id;
+            player.spectating = false;
+            player.username = playerInfo.username;
+            break;
+        case (UPDATE):
+            i++;
+            if (i % 100 == 1) {
+                console.log(message.data);
             }
-        };
-        
-        ws.onclose = function() {
-            console.log("socket closed");
-        };
-        
-        ws.onerror = function(err) {
-            console.log("error: " + err.data);
-        };
-        
-        // send an attack
-        stage.click = function(data) {
-            if (!player.spectating) {
-                var attack = {};
-                attack.xPos = player.position.x;
-                attack.yPos = player.position.y;
-                var totalVelocity = 15; // TODO: get this from player or from attack type or whatever
-                var xClick = data.global.x;
-                var yClick = data.global.y;
-                var xDelta = xClick - attack.xPos;
-                var yDelta = yClick - attack.yPos;
-                var d = Math.sqrt((xDelta * xDelta) + (yDelta * yDelta));
-                var factor = 10 / d;
-                attack.xVelocity = xDelta * factor;
-                attack.yVelocity = yDelta * factor;
-                attack.ownerID = userid;
-                switch(player.type) {
-                case (WIZARD):
-                    attack.type = FIREBALL;
-                    break;
-                case (RANGER):
-                    attack.type = ARROW;
-                    break;
-                }
-                attack.rotation = Math.atan2(xDelta, yDelta) * -1 + Math.PI / 2;
-                var message = {type:ATTACK,id:userid,data:attack};
-                ws.send(JSON.stringify(message));
-            }
+            update = message.data;
+            break;
+        case ("text_display"):
+        	var text = new PIXI.Text(message.data.text, {font:"16px Courier", fill:message.data.color});
+        	text.expiration = ( new Date().getTime() ) + 750;
+        	text.anchor.x = 0.5;
+        	text.anchor.y = 1;
+        	text.scale.x = player.scale.x;
+        	player.addChild(text);
+        	game.textDisplays.push(text);
+        	break;
+        case ("chat"):
+        	jumbotron.append("<p>" + message.data + "</p>");
+        	jumbotron.scrollTop(jumbotron.prop('scrollHeight'));
+        	break;
+        default:
+            console.log("unknown message type:");
+            console.log(message);
+            break;
         }
-        
+    };
+    
+    ws.onclose = function() {
+        console.log("socket closed");
+        $("#loadingImg").css("display", "none");
+        $("#somethingWentWrong").css("display", "block");
+    };
+    
+    ws.onerror = function(err) {
+        console.log("error: " + err.data);
+        $("#loadingImg").css("display", "none");
+        $("#somethingWentWrong").css("display", "block");
+    };
+    
+    // send an attack
+    stage.click = function(data) {
+        if (!player.spectating) {
+            var attack = {};
+            attack.xPos = player.position.x;
+            attack.yPos = player.position.y;
+            var totalVelocity = 15; // TODO: get this from player or from attack type or whatever
+            var xClick = data.global.x;
+            var yClick = data.global.y;
+            var xDelta = xClick - attack.xPos;
+            var yDelta = yClick - attack.yPos;
+            var d = Math.sqrt((xDelta * xDelta) + (yDelta * yDelta));
+            var factor = 10 / d;
+            attack.xVelocity = xDelta * factor;
+            attack.yVelocity = yDelta * factor;
+            attack.ownerID = userid;
+            switch(player.type) {
+            case (WIZARD):
+                attack.type = FIREBALL;
+                break;
+            case (RANGER):
+                attack.type = ARROW;
+                break;
+            }
+            attack.rotation = Math.atan2(xDelta, yDelta) * -1 + Math.PI / 2;
+            var message = {type:ATTACK,id:userid,data:attack};
+            ws.send(JSON.stringify(message));
+        }
+    }
+    
 
-        setInterval(function() {
-            if (!player.spectating) {
-    	          player.vx = 0;
-    	          player.vy = 0;
-                if (keys.right && player.position.x < STAGE_WIDTH - 20 && !hitWallGoingRight())
-                    player.vx += MAX_SPEED;
-                if (keys.left && player.position.x > 20 && !hitWallGoingLeft())
-                    player.vx -= MAX_SPEED;
-			          if (keys.up && player.position.y > 20 && !hitWallGoingUp())
-			              player.vy -= MAX_SPEED;
-			          if (keys.down && player.position.y < STAGE_HEIGHT - 20 && !hitWallGoingDown())
-			              player.vy += MAX_SPEED;
-			          if (player.vx > 0) {
-			              player.scale.x = -1;
-			          }
-			          else if (player.vx < 0) {
-			              player.scale.x = 1;
-			          }
-			          player.text.scale.x = player.scale.x;
-		              game.textDisplays.forEach(function(text) {
-		            	  text.scale.x = player.scale.x;
-		              })
-			          player.position.x += player.vx;
-			          player.position.y += player.vy;
-            }
-        }, 20);
+    setInterval(function() {
+        if (!player.spectating) {
+	          player.vx = 0;
+	          player.vy = 0;
+            if (keys.right && player.position.x < STAGE_WIDTH - 20 && !hitWallGoingRight())
+                player.vx += MAX_SPEED;
+            if (keys.left && player.position.x > 20 && !hitWallGoingLeft())
+                player.vx -= MAX_SPEED;
+		          if (keys.up && player.position.y > 20 && !hitWallGoingUp())
+		              player.vy -= MAX_SPEED;
+		          if (keys.down && player.position.y < STAGE_HEIGHT - 20 && !hitWallGoingDown())
+		              player.vy += MAX_SPEED;
+		          if (player.vx > 0) {
+		              player.scale.x = -1;
+		          }
+		          else if (player.vx < 0) {
+		              player.scale.x = 1;
+		          }
+		          player.text.scale.x = player.scale.x;
+	              game.textDisplays.forEach(function(text) {
+	            	  text.scale.x = player.scale.x;
+	              })
+		          player.position.x += player.vx;
+		          player.position.y += player.vy;
+        }
+    }, 20);
 
-        // send player update
-        setInterval(function() {
-            if (!player.spectating) { // has the welcome message arrived?
-                var playerInfo = {};
-                playerInfo.xPos = player.position.x;
-                playerInfo.yPos = player.position.y;
-                playerInfo.id = userid;
-                var message = {};
-                message.type = PLAYER_UPDATE;
-                message.id = userid;
-                message.data = playerInfo;
-                ws.send(JSON.stringify(message));
-            }
-            updateView();
-        }, 20);
-        
-        $(document).keydown(function(event) {
-            switch(event.which) {
-            case (upArrow):
-            case (upKey):
-                keys.up = true;
-                break;
-            case (downArrow):
-            case (downKey):
-                keys.down = true;
-                break;
-            case (leftArrow):
-            case (leftKey):
-                keys.left = true;
-                break;
-            case (rightArrow):
-            case (rightKey):
-                keys.right = true;
-                break;
-            }
-        });
-    // }
+    // send player update
+    setInterval(function() {
+        if (!player.spectating) { // has the welcome message arrived?
+            var playerInfo = {};
+            playerInfo.xPos = player.position.x;
+            playerInfo.yPos = player.position.y;
+            playerInfo.id = userid;
+            var message = {};
+            message.type = PLAYER_UPDATE;
+            message.id = userid;
+            message.data = playerInfo;
+            ws.send(JSON.stringify(message));
+        }
+        updateView();
+    }, 20);
+    
+    $(document).keydown(function(event) {
+        switch(event.which) {
+        case (upArrow):
+        case (upKey):
+            keys.up = true;
+            break;
+        case (downArrow):
+        case (downKey):
+            keys.down = true;
+            break;
+        case (leftArrow):
+        case (leftKey):
+            keys.left = true;
+            break;
+        case (rightArrow):
+        case (rightKey):
+            keys.right = true;
+            break;
+        }
+    });
     
     function updateView() {
         if (update.players == undefined)

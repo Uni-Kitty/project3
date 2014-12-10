@@ -57,30 +57,6 @@ h1 {
 	display:inline;
 }
 
-#charSelector {
-	margin: 0;
-	padding: 0;
-	position: fixed;
-	top: 0;
-	bottom: 0;
-	left: 0;
-	right: 0;
-	background: #222222;
-	opacity: 0.85;
-	padding-top: 15%;
-	color: red;
-	text-decoration: bold;
-	font-size: 24pt;
-}
-
-#charSelector img {
-	margin-left: 40px;
-}
-
-#charSelector * {
-	opacity: 1;
-}
-
 #rttBox {
 	clear: both;
 }
@@ -106,4 +82,80 @@ h1 {
 	margin: 1px;
 	padding: 0;
     white-space: nowrap;
+}
+
+#black {
+	background: #15191f;
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	right: 0;
+	left: 0;
+	color: white;
+}
+
+#loadingImg {
+	margin-top: 50px;
+}
+
+#somethingWentWrong {
+	padding-top: 50px;
+	display: none;
+	z-index: 10;
+}
+
+#somethingWentWrong img {
+	height: 300px;
+	width: 300px;
+}
+
+#overlay {
+    margin: 0;
+    padding: 0;
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: #222222;
+    opacity: 0.85;
+    padding-top: 15%;
+    color: white;
+    text-decoration: bold;
+    z-index: 9;
+}
+
+#charSelector img {
+    margin-left: 40px;
+}
+
+#overlay * {
+    opacity: 1;
+}
+
+#overlay h2 {
+    font-size: 24px;
+}
+
+
+#welcome {
+	display: none;
+}
+
+#nameSelector {
+	display: none;
+}
+
+#charSelector {
+	display: none;
+}
+
+#youHaveDied {
+	display: none;
+	color: red;
+}
+
+#youMustHaveAName {
+	display: none;
+	color: red;
 }
