@@ -3,11 +3,11 @@ package com.unikitty.project3;
 public class Location {
 	private double latidude;
 	private double longitude;
-	private String city;
-	private String region;
-	private String country;
+	private String city = null;
+	private String region = null;
+	private String country = null;
 	private int id;
-	private String name;
+	private String name = null;
 	  
 	public Location () {}
 	

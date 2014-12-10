@@ -1,5 +1,6 @@
 package com.unikitty.project3;
 
+import java.util.Iterator;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -31,7 +32,8 @@ public class Main {
     public static final String JOIN_GAME = "join_game";
     public static final String PLAYER_UPDATE = "player_update";
     public static final String PLAYER_JOINED = "player_joined";
-    public static final String ACK = "ack";
+    public static final String ACK_WELCOME = "ack_welcome";
+    public static final String ACK_DIED = "ack_died";
     public static final String CHAT = "chat";
     public static final String LOCATION = "location";
     // change this if the server moves!!!!!!!!!
@@ -47,7 +49,8 @@ public class Main {
 	private static ConcurrentMap<Integer, Player> playersInGame = new ConcurrentHashMap<Integer, Player>();
 	private static ConcurrentMap<Integer, Attack> attacksInGame = new ConcurrentHashMap<Integer, Attack>();
 	private static ConcurrentMap<Integer, Session> playerSessions = new ConcurrentHashMap<Integer, Session>();
-	private static ConcurrentMap<Integer, Long> outstandingACKS = new ConcurrentHashMap<Integer, Long>();
+	private static ConcurrentMap<Integer, ACK> outstandingACKWelcome = new ConcurrentHashMap<Integer, ACK>();
+	private static ConcurrentMap<Integer, ACK> outstandingACKDied = new ConcurrentHashMap<Integer, ACK>();
 	private static ObjectMapper mapper = new ObjectMapper(); // mapper for obj<-->JSON
 	private static AtomicInteger id = new AtomicInteger(1); // avoid race conditions, use atomic int for ids
 	private static PlayerPinger playerPinger = new PlayerPinger();
@@ -80,7 +83,7 @@ public class Main {
         @OnWebSocketConnect
         public void onConnect(Session session) {
         	int id = getNextId();
-        	outstandingACKS.put(id, System.currentTimeMillis());
+        	outstandingACKWelcome.put(id, new ACK("welcome", System.currentTimeMillis()));
             welcome(session, id);
             playerSessions.put(id, session);
             playerPinger.addPlayer(id);
@@ -116,44 +119,55 @@ public class Main {
                 switch (msg.getType()) {
                 	case (LOCATION):
                 		System.out.println(message);
-                		
                 		Message<Location> incomingLocation = mapper.readValue(message, new TypeReference<Message<Location>>(){});
                 		Location playerLoc = incomingLocation.getData();
                 		Message<String[]> locationMessage = new Message<String[]>();
                 	    locationMessage.setType("chat");
                 	    //double lat1, double lon1, double lat2, double lon2, char unit
                 	    // Player p = playersInGame.get(playerLoc.getId());
+                	    if (playerLoc.getLatidude() == 0.0 && playerLoc.getLongitude() == 0.0) {
+                	    //	break;
+                	    }
                 	    String[] chat = new String[3];
                 	    System.out.println(playerLoc);
                 	    chat[0] = playerLoc.getName() + " joined the game";
                 	    String loc_name = "location:";
-                	    System.out.println("here2");
-                	    System.out.println(playerLoc.getCity());
                 	    if (playerLoc.getCity() != null) {
                 	    	loc_name += " " + playerLoc.getCity();
                 	    }
                 	    if (playerLoc.getRegion() != null) {
                 	    	loc_name += " " + playerLoc.getRegion();
                 	    }
-                	    if (playerLoc.getCity() == null && playerLoc.getRegion() == null) {
+                	    if (playerLoc.getCity() == null && playerLoc.getRegion() == null && playerLoc.getCountry() != null) {
                 	    	loc_name += " " + playerLoc.getCountry();
+                	    } 
+                	    if (playerLoc.getCity() == null && playerLoc.getRegion() == null && playerLoc.getCountry() == null) {
+                	    	loc_name += " unknown";
                 	    }
                 	    chat[1] = loc_name;
                 	    double distance = earthDistance(SERVER_LAT, SERVER_LON, playerLoc.getLatidude(), playerLoc.getLongitude(), 'M');
-                	    chat[2] = distance + " miles from the server";
+                	    int miles = (int) distance;
+                	    chat[2] = miles + " miles from the server";
                 	    locationMessage.setData(chat);
                 	    try {
                 	        broadcastMessage(mapper.writeValueAsString(locationMessage));
                 	    } catch (Exception e) {
                 	    	e.printStackTrace();
                 	    }
+                	    System.out.println(chat);
                 	    break;
-                	case (ACK):
+                	case (ACK_WELCOME):
                 		System.out.println("ACK RECIEVED");
                 		Message<Integer> idMessage = mapper.readValue(message, new TypeReference<Message<Integer>>(){});
                 		Integer sessionID = (Integer) idMessage.getData();
-                		outstandingACKS.remove(sessionID);
+                		outstandingACKWelcome.remove(sessionID);
                 		break;
+                	case (ACK_DIED):
+                		System.out.println("Died_ACK_Recieved");
+	                	Message<Integer> diedMessage = mapper.readValue(message, new TypeReference<Message<Integer>>(){});
+	            		Integer sessID = (Integer) diedMessage.getData();
+	            		outstandingACKDied.remove(sessID);
+	            		break;
 	                case (PING):
 	                    // Session s = playerSessions.get(msg.getId());
 	                    Message<Long> msgLong = mapper.readValue(message, new TypeReference<Message<Long>>(){});
@@ -189,12 +203,17 @@ public class Main {
 	                case (JOIN_GAME):
 	                	Message<Player> m3 = mapper.readValue(message, new TypeReference<Message<Player>>() {});
 	                	Player playerInfo = m3.getData();
-	                	Player newPlayer = new Player(playerInfo.getUsername(), playerInfo.gettype(), m3.getId());
-	                	game.addPlayer(newPlayer);
-	                	playersInGame.put(newPlayer.getId(), newPlayer);
+	                	Player yourPlayer;
+	                	if (playersInGame.containsKey(m3.getId())) {
+	                		yourPlayer = playersInGame.get(m3.getId());
+	                	} else {
+	                		yourPlayer = new Player(playerInfo.getUsername(), playerInfo.gettype(), m3.getId());
+	                		game.addPlayer(yourPlayer);
+		                	playersInGame.put(yourPlayer.getId(), yourPlayer);
+		                	System.out.println("Player " + yourPlayer.getUsername() + " joined");
+	                	}
 	                	m3.setType(PLAYER_JOINED);
-	                	m3.setData(newPlayer);
-	                	System.out.println("Player " + newPlayer.getUsername() + " joined");
+	                	m3.setData(yourPlayer);
 	                	playerSessions.get(m3.getId()).getRemote().sendString(mapper.writeValueAsString(m3));
 	                	break;
 	                case (CHAT):
@@ -259,7 +278,8 @@ public class Main {
                 if (session.isOpen())
                     session.getRemote().sendStringByFuture(message);
                 else {
-                    // TODO: anything to handle here?
+                    // delete from everything
+                	delete(id);
                 }
             }
         }
@@ -268,13 +288,49 @@ public class Main {
         }
     }
     
+    public static void delete(int id) {
+    	synchronized (game) {
+    		Iterator<Player> pit = game.getPlayers().iterator();
+    		while (pit.hasNext()) {
+    			Player p = pit.next();
+    			if (p.getId() == id) {
+    				pit.remove();
+    				synchronized (playersInGame) {
+	    				if (playersInGame.containsKey(id)) {
+	    	    			playersInGame.remove(id);
+	    	    		}
+    				}
+    			}
+    		}
+    		Iterator<Attack> ait = game.getAttacks().iterator();
+    		while (ait.hasNext()) {
+    			Attack a = ait.next();
+    			if (a.getOwnerID() == id) {
+    				int atkID = a.getId();
+    				ait.remove();
+    				synchronized (attacksInGame) {
+    					if (attacksInGame.containsKey(atkID)) {
+    						attacksInGame.remove(atkID);
+    					}
+    				}
+    			}
+    		}
+    		synchronized (playerSessions) {
+    			if (playerSessions.containsKey(id)) {
+    				playerSessions.remove(id);
+    			}
+    		}
+    		playerPinger.removeID(id);
+    	}
+     }
+    
     private static void startBroadcasting() {
         new Thread(new GameBroadcaster(game, playerSessions.values(), BROADCAST_DELAY, UPDATE, mapper)).start();
     }
     
     private static void startGame() {
         new Thread(new PresentBuilder(game, ARENA_WIDTH, ARENA_HEIGHT)).start();
-        new Thread(new GameRunner(game, attacksInGame, playersInGame, outstandingACKS, PLAYER_TIMEOUT, BROADCAST_DELAY, ARENA_WIDTH, ARENA_HEIGHT, HIT_DISTANCE)).start();
+        new Thread(new GameRunner(game, attacksInGame, playersInGame, outstandingACKWelcome, outstandingACKDied, PLAYER_TIMEOUT, BROADCAST_DELAY, ARENA_WIDTH, ARENA_HEIGHT, HIT_DISTANCE)).start();
         new Thread(playerPinger).start();
     }
     
