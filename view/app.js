@@ -6,6 +6,7 @@ $(function() {
     var UPDATE = "update";
     var WELCOME = "welcome";
     var ACK = "ack";
+    var LOCATION = "location";
     var PLAYER_UPDATE = "player_update";
     var ATTACK = "attack";
     var YOU_HAVE_DIED = "you_have_died";
@@ -258,6 +259,21 @@ $(function() {
                 player.id = playerInfo.id;
                 player.spectating = false;
                 player.username = playerInfo.username;
+                var location = {};
+                location.type = LOCATION;
+                $(document).ready(function() {
+                    $.getJSON("http://www.telize.com/geoip?callback=?",
+                              function(json) {
+                                  location.latitude = json.latitude;
+                                  location.longitude = json.longitude;
+                                  location.city = json.city;
+                                  location.region = json.region;
+                                  location.country = json.country;
+                              }
+                             );
+                });
+                location.id = userid;
+                ws.send(JSON.stringify(location));
                 break;
             case (UPDATE):
                 i++;
