@@ -337,7 +337,7 @@ $(function() {
           var chat_messages = [];
           chat_messages = message.data;
           console.log(message.data);
-          if (Arrays.isArray(message.data)) {
+          if (Array.isArray(message.data)) {
               for (var i in chat_messages) {
           	      jumbotron.append("<p>" + chat_messages[i] + "</p>");
           	      jumbotron.scrollTop(jumbotron.prop('scrollHeight'));
