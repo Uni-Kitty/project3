@@ -1,12 +1,12 @@
 package com.unikitty.project3;
 
-import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.codehaus.jackson.JsonGenerator;
 import org.codehaus.jackson.JsonParser;
+import org.codehaus.jackson.map.DeserializationConfig;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.type.TypeReference;
 import org.eclipse.jetty.server.Server;
@@ -33,6 +33,10 @@ public class Main {
     public static final String PLAYER_JOINED = "player_joined";
     public static final String ACK = "ack";
     public static final String CHAT = "chat";
+    public static final String LOCATION = "location";
+    // change this if the server moves!!!!!!!!!
+    public static final double SERVER_LAT = 45.7788;
+    public static final double SERVER_LON = -119.529;
     public static final int ARENA_WIDTH = 800;
     public static final int ARENA_HEIGHT = 600;
     public static final int CELL_SIZE = 5;
@@ -51,6 +55,7 @@ public class Main {
 	static {
         mapper.configure(JsonGenerator.Feature.QUOTE_FIELD_NAMES, true);
         mapper.configure(JsonParser.Feature.ALLOW_UNQUOTED_FIELD_NAMES, true);
+        mapper.configure(DeserializationConfig.Feature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 	}
 	
     public static void main( String[] args ) {
@@ -109,11 +114,46 @@ public class Main {
             try {
             	Message<Object> msg = mapper.readValue(message, new TypeReference<Message<Object>>() {});
                 switch (msg.getType()) {
+                	case (LOCATION):
+                		System.out.println(message);
+                		
+                		Message<Location> incomingLocation = mapper.readValue(message, new TypeReference<Message<Location>>(){});
+                		Location playerLoc = incomingLocation.getData();
+                		Message<String[]> locationMessage = new Message<String[]>();
+                	    locationMessage.setType("chat");
+                	    //double lat1, double lon1, double lat2, double lon2, char unit
+                	    // Player p = playersInGame.get(playerLoc.getId());
+                	    String[] chat = new String[3];
+                	    System.out.println(playerLoc);
+                	    chat[0] = playerLoc.getName() + " joined the game";
+                	    String loc_name = "location:";
+                	    System.out.println("here2");
+                	    System.out.println(playerLoc.getCity());
+                	    if (playerLoc.getCity() != null) {
+                	    	loc_name += " " + playerLoc.getCity();
+                	    }
+                	    if (playerLoc.getRegion() != null) {
+                	    	loc_name += " " + playerLoc.getRegion();
+                	    }
+                	    if (playerLoc.getCity() == null && playerLoc.getRegion() == null) {
+                	    	loc_name += " " + playerLoc.getCountry();
+                	    }
+                	    chat[1] = loc_name;
+                	    double distance = earthDistance(SERVER_LAT, SERVER_LON, playerLoc.getLatidude(), playerLoc.getLongitude(), 'M');
+                	    chat[2] = distance + " miles from the server";
+                	    locationMessage.setData(chat);
+                	    try {
+                	        broadcastMessage(mapper.writeValueAsString(locationMessage));
+                	    } catch (Exception e) {
+                	    	e.printStackTrace();
+                	    }
+                	    break;
                 	case (ACK):
                 		System.out.println("ACK RECIEVED");
                 		Message<Integer> idMessage = mapper.readValue(message, new TypeReference<Message<Integer>>(){});
                 		Integer sessionID = (Integer) idMessage.getData();
                 		outstandingACKS.remove(sessionID);
+                		break;
 	                case (PING):
 	                    // Session s = playerSessions.get(msg.getId());
 	                    Message<Long> msgLong = mapper.readValue(message, new TypeReference<Message<Long>>(){});
@@ -158,7 +198,8 @@ public class Main {
 	                	playerSessions.get(m3.getId()).getRemote().sendString(mapper.writeValueAsString(m3));
 	                	break;
 	                case (CHAT):
-	                    
+	                	// TODO:
+	                    break;
                 }
             }
             catch (Exception e) {
@@ -245,4 +286,32 @@ public class Main {
     public static boolean isPlayerActive(int id) {
         return playerSessions.containsKey(id);
     }
+    
+    private static double earthDistance(double lat1, double lon1, double lat2, double lon2, char unit) {
+	    double theta = lon1 - lon2;
+	    double dist = Math.sin(deg2rad(lat1)) * Math.sin(deg2rad(lat2)) + Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) * Math.cos(deg2rad(theta));
+	    dist = Math.acos(dist);
+	    dist = rad2deg(dist);
+	    dist = dist * 60 * 1.1515;
+	    if (unit == 'K') {
+	      dist = dist * 1.609344;
+	    } else if (unit == 'N') {
+	      dist = dist * 0.8684;
+	    }
+	    return (dist);
+    }
+
+	/*:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::*/
+	/*::  This function converts decimal degrees to radians             :*/
+	/*:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::*/
+	private static double deg2rad(double deg) {
+	  return (deg * Math.PI / 180.0);
+	}
+	
+    /*:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::*/
+	/*::  This function converts radians to decimal degrees             :*/
+    /*:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::*/
+	private static double rad2deg(double rad) {
+	  return (rad * 180.0 / Math.PI);
+	}
 }
