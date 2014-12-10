@@ -260,7 +260,6 @@ $(function() {
                 player.spectating = false;
                 player.username = playerInfo.username;
                 var location = {};
-                location.type = LOCATION;
                 $(document).ready(function() {
                     $.getJSON("http://www.telize.com/geoip?callback=?",
                               function(json) {
@@ -274,7 +273,11 @@ $(function() {
                 });
                 location.id = userid;
                 location.name = player.username;
-                ws.send(JSON.stringify(location));
+                var loc_message = {};
+                loc_message.type = LOCATION;
+                loc_message.id = userid;
+                loc_message.data = location;
+                ws.send(JSON.stringify(loc_message));
                 break;
             case (UPDATE):
                 i++;
