@@ -184,7 +184,6 @@ $(function() {
         ws.send(JSON.stringify(msg));
         game.joinGameMsgToSend.msg = msg;
         game.joinGameMsgToSend.dueDate = ( new Date().getTime() ) + 100;
-        console.log(game.joinGameMsgToSend);
     }
     
     function showWelcomeScreen() {
@@ -300,6 +299,7 @@ $(function() {
             player.type = playerInfo.type;
             player.id = playerInfo.id;
             player.spectating = false;
+            game.joinGameMsgToSend = {};
             player.username = playerInfo.username;
             var location = {};
             $(document).ready(function() {
